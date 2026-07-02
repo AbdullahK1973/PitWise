@@ -45,7 +45,7 @@ export function CodeEntryScreen({
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content}>
         <SectionHeader title="Enter Code" subtitle="Use the code from your scanner or parts-store scan. PitWise will translate it without treating the code as proof of a failed part." />
-        <Card>
+        <Card style={styles.formCard}>
           <Text style={[styles.label, { color: theme.text }]}>OBD2 code</Text>
           <TextInput
             autoCapitalize="characters"
@@ -53,7 +53,7 @@ export function CodeEntryScreen({
             onChangeText={setCode}
             placeholder="P0302"
             placeholderTextColor={theme.muted}
-            style={[styles.codeInput, { backgroundColor: theme.input, borderColor: valid || !code ? theme.border : "#EF4444", color: theme.text }]}
+            style={[styles.codeInput, { backgroundColor: "#0B151CCC", borderColor: valid || !code ? `${theme.primary}55` : theme.danger, color: theme.code, fontFamily: theme.fontMono }]}
           />
           <Text style={[styles.help, { color: theme.muted }]}>Normalized: {normalized || "P0000"}</Text>
           <Text style={[styles.label, { color: theme.text }]}>Symptoms optional</Text>
@@ -75,21 +75,29 @@ export function CodeEntryScreen({
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 28,
     paddingBottom: 36
+  },
+  formCard: {
+    padding: 20
   },
   label: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "900",
     marginBottom: 8
   },
   codeInput: {
-    minHeight: 58,
+    minHeight: 72,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 28,
+    paddingHorizontal: 16,
+    fontSize: 34,
     fontWeight: "900",
+    letterSpacing: 4,
     marginBottom: 8
   },
   help: {

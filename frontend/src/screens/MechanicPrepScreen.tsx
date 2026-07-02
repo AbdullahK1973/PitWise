@@ -38,11 +38,15 @@ export function MechanicPrepScreen({ scan, onBack }: { scan: Scan; onBack: () =>
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: 920,
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 28,
     paddingBottom: 36
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "900",
     marginBottom: 10
   },

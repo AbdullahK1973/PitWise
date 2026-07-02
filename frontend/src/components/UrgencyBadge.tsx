@@ -17,11 +17,12 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 5
+    paddingHorizontal: 12,
+    paddingVertical: 6
   },
   text: {
-    fontSize: 12,
-    fontWeight: "800"
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1
   }
 });

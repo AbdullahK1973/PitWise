@@ -16,7 +16,7 @@ export function DiagnosisDetailScreen({ scan, onBack, onMechanicPrep }: { scan: 
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.topRow}>
         <View>
-          <Text style={[styles.code, { color: theme.text }]}>{diagnosis.code}</Text>
+          <Text style={[styles.code, { color: theme.code, fontFamily: theme.fontMono }]}>{diagnosis.code}</Text>
           <Text style={[styles.title, { color: theme.muted }]}>{diagnosis.title}</Text>
         </View>
         <UrgencyBadge urgency={diagnosis.urgency} />
@@ -68,7 +68,11 @@ export function DiagnosisDetailScreen({ scan, onBack, onMechanicPrep }: { scan: 
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: 920,
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 28,
     paddingBottom: 36
   },
   topRow: {
@@ -76,11 +80,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
-    marginBottom: 16
+    marginBottom: 18
   },
   code: {
-    fontSize: 38,
-    fontWeight: "900"
+    fontSize: 46,
+    lineHeight: 52,
+    fontWeight: "900",
+    letterSpacing: 2
   },
   title: {
     marginTop: 4,
@@ -89,7 +95,7 @@ const styles = StyleSheet.create({
     maxWidth: 240
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "900",
     marginBottom: 10
   },
@@ -103,7 +109,7 @@ const styles = StyleSheet.create({
     marginTop: 12
   },
   safety: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: "900",
     marginBottom: 8
   },

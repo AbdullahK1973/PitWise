@@ -1,0 +1,54 @@
+{
+  "cli": {
+    "version": ">= 13.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://localhost:8000",
+        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://pitwise.example/privacy.html",
+        "EXPO_PUBLIC_TERMS_URL": "https://pitwise.example/terms.html",
+        "EXPO_PUBLIC_SUPPORT_URL": "https://pitwise.example/support.html",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "",
+        "PITWISE_ANDROID_PACKAGE": "com.pitwise.app",
+        "PITWISE_IOS_BUNDLE_IDENTIFIER": "com.abdullahkhalid.pitwise"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.pitwise.example",
+        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://pitwise.example/privacy.html",
+        "EXPO_PUBLIC_TERMS_URL": "https://pitwise.example/terms.html",
+        "EXPO_PUBLIC_SUPPORT_URL": "https://pitwise.example/support.html",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "",
+        "PITWISE_ANDROID_PACKAGE": "com.pitwise.app",
+        "PITWISE_IOS_BUNDLE_IDENTIFIER": "com.abdullahkhalid.pitwise"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.pitwise.example",
+        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://pitwise.example/privacy.html",
+        "EXPO_PUBLIC_TERMS_URL": "https://pitwise.example/terms.html",
+        "EXPO_PUBLIC_SUPPORT_URL": "https://pitwise.example/support.html",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "",
+        "PITWISE_ANDROID_PACKAGE": "com.pitwise.app",
+        "PITWISE_IOS_BUNDLE_IDENTIFIER": "com.abdullahkhalid.pitwise"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

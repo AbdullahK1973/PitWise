@@ -1,10 +1,24 @@
-export type AppScreen = "loading" | "onboarding" | "home" | "code" | "history" | "detail" | "prep" | "bluetooth";
+export type AppScreen = "loading" | "login" | "onboarding" | "home" | "code" | "history" | "detail" | "prep" | "settings" | "bluetooth";
+
+export type AuthUser = {
+  id: number;
+  email?: string | null;
+  display_name?: string | null;
+  auth_provider: string;
+  avatar_url?: string | null;
+};
+
+export type AuthResponse = {
+  client_id: string;
+  user: AuthUser;
+};
 
 export type Urgency = "low" | "moderate" | "high" | "critical";
 export type DriveSafety = "safe" | "caution" | "avoid driving";
 
 export type Vehicle = {
   id: number;
+  user_id: number;
   make: string;
   model: string;
   year: number;
@@ -12,7 +26,7 @@ export type Vehicle = {
   mileage?: number | null;
 };
 
-export type VehicleInput = Omit<Vehicle, "id">;
+export type VehicleInput = Omit<Vehicle, "id" | "user_id">;
 
 export type Diagnosis = {
   code: string;
@@ -34,6 +48,7 @@ export type Diagnosis = {
 
 export type Scan = {
   id: number;
+  user_id: number;
   vehicle_id: number;
   code: string;
   symptoms?: string | null;

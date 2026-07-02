@@ -48,7 +48,7 @@ export function OnboardingScreen({ initialVehicle, onSaved }: { initialVehicle: 
           title="PitWise"
           subtitle="Set up your main vehicle. PitWise translates car issues into plain language and helps you prepare for the repair conversation."
         />
-        <Card>
+        <Card style={styles.formCard}>
           <Text style={[styles.label, { color: theme.text }]}>Make</Text>
           <TextInput value={make} onChangeText={setMake} placeholder="Toyota" placeholderTextColor={theme.muted} style={[styles.input, { backgroundColor: theme.input, borderColor: theme.border, color: theme.text }]} />
           <Text style={[styles.label, { color: theme.text }]}>Model</Text>
@@ -68,19 +68,26 @@ export function OnboardingScreen({ initialVehicle, onSaved }: { initialVehicle: 
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 28,
     paddingBottom: 36
+  },
+  formCard: {
+    padding: 20
   },
   label: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "900",
     marginBottom: 8
   },
   input: {
-    minHeight: 48,
+    minHeight: 52,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     marginBottom: 14,
     fontSize: 16
   }

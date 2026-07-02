@@ -29,7 +29,7 @@ export function HistoryScreen({ scans, onRefresh, onSelect }: { scans: Scan[]; o
           <Card>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.code, { color: theme.text }]}>{item.code}</Text>
+                <Text style={[styles.code, { color: theme.code, fontFamily: theme.fontMono }]}>{item.code}</Text>
                 <Text style={[styles.date, { color: theme.muted }]}>{new Date(item.created_at).toLocaleString()}</Text>
               </View>
               <UrgencyBadge urgency={item.urgency} />
@@ -44,7 +44,11 @@ export function HistoryScreen({ scans, onRefresh, onSelect }: { scans: Scan[]; o
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: 920,
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 28,
     paddingBottom: 110
   },
   row: {
@@ -55,8 +59,9 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   code: {
-    fontSize: 24,
-    fontWeight: "900"
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: 1
   },
   date: {
     marginTop: 3,

@@ -3,32 +3,41 @@ import { Urgency } from "../types";
 
 export const colors = {
   transparent: "transparent",
-  ink: "#111827",
-  slate: "#475569",
-  mist: "#F8FAFC",
-  line: "#E2E8F0",
+  ink: "#F5FFF8",
+  slate: "#9EB2AB",
+  mist: "#10161F",
+  line: "#35413F",
   white: "#FFFFFF",
-  night: "#0B1120",
-  panel: "#111827",
-  panelLine: "#243044",
-  blue: "#2563EB",
-  green: "#10B981",
-  amber: "#F59E0B",
-  orange: "#F97316",
-  red: "#EF4444"
+  night: "#081018",
+  panel: "#142029",
+  panelLine: "#30403F",
+  blue: "#67E8F9",
+  green: "#8AF5BD",
+  amber: "#FACC6B",
+  orange: "#FF9F4A",
+  red: "#FF6B6B",
+  accent: "#FFB15C",
+  glow: "#8AF5BD",
+  code: "#B7F7D1"
 };
 
 export function makeTheme(scheme: ColorSchemeName) {
-  const dark = scheme === "dark";
+  const dark = true;
   return {
     dark,
-    background: dark ? colors.night : colors.mist,
-    card: dark ? colors.panel : colors.white,
-    text: dark ? "#F8FAFC" : colors.ink,
-    muted: dark ? "#CBD5E1" : colors.slate,
-    border: dark ? colors.panelLine : colors.line,
-    input: dark ? "#172033" : "#FFFFFF",
-    primary: colors.blue
+    background: colors.night,
+    card: "#142029CC",
+    text: colors.ink,
+    muted: colors.slate,
+    border: colors.panelLine,
+    input: "#101A22CC",
+    primary: colors.green,
+    accent: colors.accent,
+    code: colors.code,
+    danger: colors.red,
+    shadow: "#000000",
+    fontDisplay: "Space Grotesk, System",
+    fontMono: "JetBrains Mono, monospace"
   };
 }
 

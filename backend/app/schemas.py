@@ -16,12 +16,37 @@ class VehicleBase(BaseModel):
     mileage: int | None = Field(default=None, ge=0, le=1_000_000)
 
 
+class EmailLoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    display_name: str | None = Field(default=None, max_length=120)
+
+
+class GoogleAccessTokenLoginRequest(BaseModel):
+    access_token: str = Field(min_length=20, max_length=4096)
+
+
+class AuthUserRead(BaseModel):
+    id: int
+    email: str | None
+    display_name: str | None
+    auth_provider: str
+    avatar_url: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class AuthResponse(BaseModel):
+    client_id: str
+    user: AuthUserRead
+
+
 class VehicleCreate(VehicleBase):
     pass
 
 
 class VehicleRead(VehicleBase):
     id: int
+    user_id: int
     created_at: datetime
     updated_at: datetime
 
@@ -54,6 +79,7 @@ class DiagnosisResponse(BaseModel):
 
 class ScanRead(BaseModel):
     id: int
+    user_id: int
     vehicle_id: int
     code: str
     symptoms: str | None
@@ -65,6 +91,7 @@ class ScanRead(BaseModel):
 
 class ScanSummary(BaseModel):
     id: int
+    user_id: int
     vehicle_id: int
     code: str
     urgency: Urgency
