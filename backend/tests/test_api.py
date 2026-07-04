@@ -75,6 +75,40 @@ def test_invalid_code_rejected(client):
     assert response.status_code == 422
 
 
+def test_describe_issue_lookup_creates_matched_scan(client):
+    vehicle = client.post(
+        "/vehicles",
+        headers={"X-Pitwise-Client-Id": "describe-client-12345"},
+        json={"make": "Honda", "model": "Accord", "year": 2016, "engine": "2.4L I4", "mileage": 102000},
+    ).json()
+
+    response = client.post(
+        "/diagnosis/describe",
+        headers={"X-Pitwise-Client-Id": "describe-client-12345"},
+        json={
+            "vehicle_id": vehicle["id"],
+            "description": "The engine has a rough idle, it shakes at stops, and the check engine light flashed once.",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["code"] in {"P0300", "P0301", "P0302"}
+    assert "closest seeded OBD2 pattern" in data["diagnosis"]["symptoms_note"]
+    assert data["diagnosis"]["likely_causes"]
+    assert data["diagnosis"]["estimated_repair_cost_range"]
+
+
+def test_describe_issue_lookup_rejects_unmatched_description(client):
+    response = client.post(
+        "/diagnosis/describe",
+        headers={"X-Pitwise-Client-Id": "describe-unmatched-client-12345"},
+        json={"description": "There is a strange vague thing happening sometimes but no actual vehicle symptoms."},
+    )
+
+    assert response.status_code == 404
+
+
 def test_lookup_rejects_vehicle_from_another_user(client):
     other_vehicle = client.post(
         "/vehicles",

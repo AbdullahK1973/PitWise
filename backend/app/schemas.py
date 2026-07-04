@@ -59,6 +59,11 @@ class CodeLookupRequest(BaseModel):
     symptoms: str | None = Field(default=None, max_length=600)
 
 
+class SymptomLookupRequest(BaseModel):
+    description: str = Field(min_length=12, max_length=1200)
+    vehicle_id: int | None = None
+
+
 class DiagnosisResponse(BaseModel):
     code: str
     title: str

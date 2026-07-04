@@ -66,6 +66,16 @@ export function submitCodeLookup(vehicleId: number | undefined, code: string, sy
   });
 }
 
+export function submitIssueDescription(vehicleId: number | undefined, description: string) {
+  return request<Scan>("/diagnosis/describe", {
+    method: "POST",
+    body: JSON.stringify({
+      vehicle_id: vehicleId,
+      description: description.trim()
+    })
+  });
+}
+
 export function getScanHistory() {
   return request<Scan[]>("/scans");
 }

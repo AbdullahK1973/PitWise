@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import AppUser, ObdCode, Scan, Vehicle
-from app.schemas import CodeLookupRequest, CodeSearchResult, DiagnosisResponse, ScanRead
+from app.schemas import CodeLookupRequest, CodeSearchResult, DiagnosisResponse, ScanRead, SymptomLookupRequest
 from app.services.ai_service import DiagnosisGenerator
+from app.services.symptom_matcher import SymptomMatcher
 from app.utils.code_normalizer import is_valid_obd_code, normalize_obd_code
 
 router = APIRouter(tags=["diagnosis"])
@@ -38,6 +39,39 @@ def lookup_code(
         vehicle_id=vehicle.id,
         code=code,
         symptoms=payload.symptoms,
+        urgency=diagnosis.urgency,
+        summary=diagnosis.plain_english_explanation,
+        result_json=diagnosis.model_dump_json(),
+    )
+    db.add(scan)
+    db.commit()
+    db.refresh(scan)
+    return _scan_to_read(scan)
+
+
+@router.post("/diagnosis/describe", response_model=ScanRead)
+def lookup_from_description(
+    payload: SymptomLookupRequest,
+    current_user: AppUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ScanRead:
+    description = payload.description.strip()
+    codes = db.query(ObdCode).order_by(ObdCode.code.asc()).all()
+    match = SymptomMatcher().match(codes, description)
+    if not match:
+        raise HTTPException(
+            status_code=404,
+            detail="PitWise could not match that description to the current seeded OBD2 set. Try adding symptoms like rough idle, fuel smell, overheating, shifting, or exhaust.",
+        )
+
+    vehicle = _resolve_vehicle(db, current_user, payload.vehicle_id)
+    diagnosis = DiagnosisGenerator().generate(match.code_data, description)
+    diagnosis.symptoms_note = match.note
+    scan = Scan(
+        user_id=current_user.id,
+        vehicle_id=vehicle.id,
+        code=match.code_data.code,
+        symptoms=description,
         urgency=diagnosis.urgency,
         summary=diagnosis.plain_english_explanation,
         result_json=diagnosis.model_dump_json(),
