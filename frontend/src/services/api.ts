@@ -1,4 +1,13 @@
 import { AuthResponse, Diagnosis, Scan, Vehicle, VehicleInput } from "../types";
+import {
+  demoGetMechanicPrep,
+  demoGetScanHistory,
+  demoGetVehicle,
+  demoLoginWithEmail,
+  demoSaveVehicle,
+  demoSubmitCodeLookup,
+  demoSubmitIssueDescription
+} from "./demoApi";
 import { getClientId } from "./storage";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -26,17 +35,21 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export function getVehicle() {
-  return request<Vehicle | null>("/vehicles/main");
+  return withDemoFallback(() => request<Vehicle | null>("/vehicles/main"), () => demoGetVehicle());
 }
 
 export function loginWithEmail(email: string, displayName?: string) {
-  return request<AuthResponse>("/auth/email", {
-    method: "POST",
-    body: JSON.stringify({
-      email,
-      display_name: displayName?.trim() || null
-    })
-  });
+  return withDemoFallback(
+    () =>
+      request<AuthResponse>("/auth/email", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          display_name: displayName?.trim() || null
+        })
+      }),
+    () => demoLoginWithEmail(email, displayName)
+  );
 }
 
 export function loginWithGoogleAccessToken(accessToken: string) {
@@ -49,43 +62,74 @@ export function loginWithGoogleAccessToken(accessToken: string) {
 }
 
 export function saveVehicle(input: VehicleInput) {
-  return request<Vehicle>("/vehicles", {
-    method: "POST",
-    body: JSON.stringify(input)
-  });
+  return withDemoFallback(
+    () =>
+      request<Vehicle>("/vehicles", {
+        method: "POST",
+        body: JSON.stringify(input)
+      }),
+    () => demoSaveVehicle(input)
+  );
 }
 
 export function submitCodeLookup(vehicleId: number | undefined, code: string, symptoms?: string) {
-  return request<Scan>("/diagnosis/lookup", {
-    method: "POST",
-    body: JSON.stringify({
-      vehicle_id: vehicleId,
-      code,
-      symptoms: symptoms?.trim() || null
-    })
-  });
+  return withDemoFallback(
+    () =>
+      request<Scan>("/diagnosis/lookup", {
+        method: "POST",
+        body: JSON.stringify({
+          vehicle_id: vehicleId,
+          code,
+          symptoms: symptoms?.trim() || null
+        })
+      }),
+    () => demoSubmitCodeLookup(vehicleId, code, symptoms)
+  );
 }
 
 export function submitIssueDescription(vehicleId: number | undefined, description: string) {
-  return request<Scan>("/diagnosis/describe", {
-    method: "POST",
-    body: JSON.stringify({
-      vehicle_id: vehicleId,
-      description: description.trim()
-    })
-  });
+  return withDemoFallback(
+    () =>
+      request<Scan>("/diagnosis/describe", {
+        method: "POST",
+        body: JSON.stringify({
+          vehicle_id: vehicleId,
+          description: description.trim()
+        })
+      }),
+    () => demoSubmitIssueDescription(vehicleId, description)
+  );
 }
 
 export function getScanHistory() {
-  return request<Scan[]>("/scans");
+  return withDemoFallback(() => request<Scan[]>("/scans"), () => demoGetScanHistory());
 }
 
 export function getMechanicPrep(scanId: number) {
-  return request<Diagnosis>(`/mechanic-prep/${scanId}`);
+  return withDemoFallback(() => request<Diagnosis>(`/mechanic-prep/${scanId}`), () => demoGetMechanicPrep(scanId));
 }
 
 export function deleteAccountData() {
-  return request<{ status: string }>("/me", {
-    method: "DELETE"
-  });
+  return withDemoFallback(
+    () =>
+      request<{ status: string }>("/me", {
+        method: "DELETE"
+      }),
+    async () => ({ status: "deleted" })
+  );
+}
+
+async function withDemoFallback<T>(apiCall: () => Promise<T>, demoCall: () => Promise<T>): Promise<T> {
+  try {
+    return await apiCall();
+  } catch (error) {
+    if (shouldUseDemoFallback(error)) return demoCall();
+    throw error;
+  }
+}
+
+function shouldUseDemoFallback(error: unknown): boolean {
+  if (!API_URL.includes("localhost") && !API_URL.includes("127.0.0.1")) return false;
+  const message = error instanceof Error ? error.message : "";
+  return message.includes("Could not reach the PitWise API");
 }
