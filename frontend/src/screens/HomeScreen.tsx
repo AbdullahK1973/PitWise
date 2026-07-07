@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { UrgencyBadge } from "../components/UrgencyBadge";
@@ -94,22 +94,6 @@ export function HomeScreen({
                 <UrgencyBadge urgency={latestScan.urgency} />
               </View>
               <Text style={[styles.summary, { color: theme.muted }]}>{latestScan.summary}</Text>
-              <View style={styles.latestAction}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={onRepairPlan}
-                  style={({ pressed }) => [
-                    styles.repairPlanPill,
-                    {
-                      borderColor: `${theme.primary}66`,
-                      backgroundColor: `${theme.primary}14`,
-                      opacity: pressed ? 0.82 : 1
-                    }
-                  ]}
-                >
-                  <Text style={[styles.repairPlanPillText, { color: theme.primary }]}>Open Repair Plan</Text>
-                </Pressable>
-              </View>
             </>
           ) : (
             <Text style={[styles.summary, { color: theme.muted }]}>Enter a code to get a plain-English guide and save the result here.</Text>
@@ -117,11 +101,21 @@ export function HomeScreen({
         </Card>
       </View>
 
-      <View style={styles.stack}>
-        {Platform.OS === "web" ? null : <Button label="Bluetooth OBD2 Scan" variant="secondary" onPress={onBluetooth} />}
-        <Button label="View Scan History" variant="secondary" onPress={onHistory} />
-        <Button label="Guided Repair Plan" variant="secondary" onPress={onRepairPlan} />
-        <Button label="Mechanic Prep" variant="secondary" onPress={onMechanicPrep} />
+      <View style={[styles.actionPanel, { backgroundColor: "#101A22AA", borderColor: theme.border }]}>
+        {Platform.OS === "web" ? null : (
+          <View style={styles.actionSlot}>
+            <Button label="Bluetooth OBD2 Scan" variant="secondary" onPress={onBluetooth} />
+          </View>
+        )}
+        <View style={styles.actionSlot}>
+          <Button label="View Scan History" variant="secondary" onPress={onHistory} />
+        </View>
+        <View style={styles.actionSlot}>
+          <Button label="Guided Repair Plan" variant="secondary" onPress={onRepairPlan} />
+        </View>
+        <View style={styles.actionSlot}>
+          <Button label="Mechanic Prep" variant="secondary" onPress={onMechanicPrep} />
+        </View>
       </View>
     </ScrollView>
   );
@@ -244,7 +238,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1
   },
   grid: {
-    gap: 14
+    gap: 14,
+    marginBottom: 14
   },
   gridCard: {
     width: "100%"
@@ -270,9 +265,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20
   },
-  stack: {
+  actionPanel: {
+    borderWidth: 1,
+    borderRadius: 8,
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
-    marginTop: 2
+    padding: 12,
+    shadowColor: "#000000",
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 3
+  },
+  actionSlot: {
+    flexBasis: 220,
+    flexGrow: 1
   },
   cardTitle: {
     fontSize: 18,
@@ -293,22 +301,5 @@ const styles = StyleSheet.create({
   summary: {
     fontSize: 15,
     lineHeight: 22
-  },
-  latestAction: {
-    alignItems: "flex-start",
-    marginTop: 14
-  },
-  repairPlanPill: {
-    minHeight: 42,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 9
-  },
-  repairPlanPillText: {
-    fontSize: 14,
-    fontWeight: "900"
   }
 });
