@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { UrgencyBadge } from "../components/UrgencyBadge";
@@ -95,7 +95,20 @@ export function HomeScreen({
               </View>
               <Text style={[styles.summary, { color: theme.muted }]}>{latestScan.summary}</Text>
               <View style={styles.latestAction}>
-                <Button label="Open Repair Plan" variant="secondary" onPress={onRepairPlan} />
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onRepairPlan}
+                  style={({ pressed }) => [
+                    styles.repairPlanPill,
+                    {
+                      borderColor: `${theme.primary}66`,
+                      backgroundColor: `${theme.primary}14`,
+                      opacity: pressed ? 0.82 : 1
+                    }
+                  ]}
+                >
+                  <Text style={[styles.repairPlanPillText, { color: theme.primary }]}>Open Repair Plan</Text>
+                </Pressable>
               </View>
             </>
           ) : (
@@ -234,7 +247,7 @@ const styles = StyleSheet.create({
     gap: 14
   },
   gridCard: {
-    flex: 1
+    width: "100%"
   },
   row: {
     flexDirection: "row",
@@ -282,6 +295,20 @@ const styles = StyleSheet.create({
     lineHeight: 22
   },
   latestAction: {
+    alignItems: "flex-start",
     marginTop: 14
+  },
+  repairPlanPill: {
+    minHeight: 42,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 9
+  },
+  repairPlanPillText: {
+    fontSize: 14,
+    fontWeight: "900"
   }
 });
