@@ -1,4 +1,15 @@
-export type AppScreen = "loading" | "login" | "onboarding" | "home" | "code" | "history" | "detail" | "prep" | "settings" | "bluetooth";
+export type AppScreen =
+  | "loading"
+  | "login"
+  | "onboarding"
+  | "home"
+  | "code"
+  | "history"
+  | "detail"
+  | "prep"
+  | "repairPlan"
+  | "settings"
+  | "bluetooth";
 
 export type AuthUser = {
   id: number;

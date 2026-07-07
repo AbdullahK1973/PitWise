@@ -13,6 +13,7 @@ export function HomeScreen({
   onBluetooth,
   onHistory,
   onMechanicPrep,
+  onRepairPlan,
   onVehicleEdit
 }: {
   vehicle: Vehicle | null;
@@ -21,6 +22,7 @@ export function HomeScreen({
   onBluetooth: () => void;
   onHistory: () => void;
   onMechanicPrep: () => void;
+  onRepairPlan: () => void;
   onVehicleEdit: () => void;
 }) {
   const theme = useTheme();
@@ -92,6 +94,9 @@ export function HomeScreen({
                 <UrgencyBadge urgency={latestScan.urgency} />
               </View>
               <Text style={[styles.summary, { color: theme.muted }]}>{latestScan.summary}</Text>
+              <View style={styles.latestAction}>
+                <Button label="Open Repair Plan" variant="secondary" onPress={onRepairPlan} />
+              </View>
             </>
           ) : (
             <Text style={[styles.summary, { color: theme.muted }]}>Enter a code to get a plain-English guide and save the result here.</Text>
@@ -102,6 +107,7 @@ export function HomeScreen({
       <View style={styles.stack}>
         {Platform.OS === "web" ? null : <Button label="Bluetooth OBD2 Scan" variant="secondary" onPress={onBluetooth} />}
         <Button label="View Scan History" variant="secondary" onPress={onHistory} />
+        <Button label="Guided Repair Plan" variant="secondary" onPress={onRepairPlan} />
         <Button label="Mechanic Prep" variant="secondary" onPress={onMechanicPrep} />
       </View>
     </ScrollView>
@@ -274,5 +280,8 @@ const styles = StyleSheet.create({
   summary: {
     fontSize: 15,
     lineHeight: 22
+  },
+  latestAction: {
+    marginTop: 14
   }
 });

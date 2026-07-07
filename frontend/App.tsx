@@ -8,6 +8,7 @@ import { LoadingState } from "./src/components/LoadingState";
 import { BluetoothScannerScreen } from "./src/screens/BluetoothScannerScreen";
 import { CodeEntryScreen } from "./src/screens/CodeEntryScreen";
 import { DiagnosisDetailScreen } from "./src/screens/DiagnosisDetailScreen";
+import { GuidedRepairPlanScreen } from "./src/screens/GuidedRepairPlanScreen";
 import { HistoryScreen } from "./src/screens/HistoryScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -111,10 +112,20 @@ export default function App() {
       );
     }
     if (screen === "detail" && activeScan) {
-      return <DiagnosisDetailScreen scan={activeScan} onMechanicPrep={() => setScreen("prep")} onBack={() => setScreen("home")} />;
+      return (
+        <DiagnosisDetailScreen
+          scan={activeScan}
+          onMechanicPrep={() => setScreen("prep")}
+          onRepairPlan={() => setScreen("repairPlan")}
+          onBack={() => setScreen("home")}
+        />
+      );
     }
     if (screen === "prep" && activeScan) {
       return <MechanicPrepScreen scan={activeScan} onBack={() => setScreen("detail")} />;
+    }
+    if (screen === "repairPlan" && activeScan) {
+      return <GuidedRepairPlanScreen scan={activeScan} onBack={() => setScreen("detail")} onMechanicPrep={() => setScreen("prep")} />;
     }
     if (screen === "bluetooth") {
       return (
@@ -151,12 +162,13 @@ export default function App() {
         onBluetooth={() => setScreen("bluetooth")}
         onHistory={() => setScreen("history")}
         onMechanicPrep={() => (activeScan ? setScreen("prep") : setScreen("history"))}
+        onRepairPlan={() => (activeScan ? setScreen("repairPlan") : setScreen("history"))}
         onVehicleEdit={() => setScreen("onboarding")}
       />
     );
   }
 
-  const showTabs = !["loading", "login", "onboarding", "code", "detail", "prep", "bluetooth"].includes(screen);
+  const showTabs = !["loading", "login", "onboarding", "code", "detail", "prep", "repairPlan", "bluetooth"].includes(screen);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>

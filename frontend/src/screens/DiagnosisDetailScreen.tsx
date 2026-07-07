@@ -8,7 +8,17 @@ import { useTheme } from "../hooks/useTheme";
 import { urgencyColor } from "../theme/theme";
 import { Scan } from "../types";
 
-export function DiagnosisDetailScreen({ scan, onBack, onMechanicPrep }: { scan: Scan; onBack: () => void; onMechanicPrep: () => void }) {
+export function DiagnosisDetailScreen({
+  scan,
+  onBack,
+  onMechanicPrep,
+  onRepairPlan
+}: {
+  scan: Scan;
+  onBack: () => void;
+  onMechanicPrep: () => void;
+  onRepairPlan: () => void;
+}) {
   const theme = useTheme();
   const diagnosis = scan.diagnosis;
   const safetyColor = urgencyColor(diagnosis.urgency);
@@ -32,6 +42,16 @@ export function DiagnosisDetailScreen({ scan, onBack, onMechanicPrep }: { scan: 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Drive guidance</Text>
         <Text style={[styles.safety, { color: safetyColor }]}>{diagnosis.drive_safety_guidance.toUpperCase()}</Text>
         <Text style={[styles.body, { color: theme.muted }]}>{diagnosis.confidence_note}</Text>
+      </Card>
+
+      <Card>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Guided repair plan</Text>
+        <Text style={[styles.body, { color: theme.muted }]}>
+          Follow a short checklist for triage, diagnosis, proof, and approval before committing to repairs.
+        </Text>
+        <View style={styles.inlineAction}>
+          <Button label="Open Repair Plan" onPress={onRepairPlan} />
+        </View>
       </Card>
 
       <Card>
@@ -59,6 +79,7 @@ export function DiagnosisDetailScreen({ scan, onBack, onMechanicPrep }: { scan: 
       </Card>
 
       <View style={styles.actions}>
+        <Button label="Open Repair Plan" onPress={onRepairPlan} />
         <Button label="Mechanic Prep" onPress={onMechanicPrep} />
         <Button label="Back Home" variant="secondary" onPress={onBack} />
       </View>
@@ -120,6 +141,9 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontSize: 13,
     lineHeight: 19
+  },
+  inlineAction: {
+    marginTop: 14
   },
   actions: {
     gap: 10
