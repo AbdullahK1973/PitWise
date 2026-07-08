@@ -3,13 +3,41 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PitWise Support</title>
+    <title>PitWise</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
     <main>
-      <h1>PitWise</h1>
-      <p>PitWise helps drivers understand OBD2 codes in plain English before talking to a mechanic.</p>
+      <section class="hero">
+        <p class="eyebrow">Plain-English OBD2 guidance</p>
+        <h1>PitWise</h1>
+        <p class="lead">PitWise helps drivers understand OBD2 codes in plain English before talking to a mechanic.</p>
+      </section>
+
+      <section class="feature-panel" aria-labelledby="agent-title">
+        <div>
+          <p class="eyebrow">New feature</p>
+          <h2 id="agent-title">Autonomous AI agent</h2>
+          <p>
+            Run a background agent that reviews your saved vehicle, recent scans, and mechanic-prep guidance while you keep using the app.
+            It reports progress, shows the backend calls it made, and returns prioritized next actions before you approve repairs.
+          </p>
+        </div>
+        <div class="agent-preview" aria-label="Autonomous agent task preview">
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <strong>Agent completed</strong>
+            <span>100%</span>
+          </div>
+          <div class="progress-track"><span></span></div>
+          <ul>
+            <li>GET /vehicles/main</li>
+            <li>GET /scans</li>
+            <li>GET /mechanic-prep/{scan_id}</li>
+          </ul>
+        </div>
+      </section>
+
       <nav>
         <a href="./privacy.html">Privacy Policy</a>
         <a href="./terms.html">Terms of Use</a>
