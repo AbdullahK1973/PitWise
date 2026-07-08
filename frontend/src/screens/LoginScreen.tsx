@@ -119,6 +119,18 @@ export function LoginScreen({ onAuthenticated }: { onAuthenticated: (user: AuthU
           </Text>
         </View>
 
+        <Card style={styles.agentPreview}>
+          <View style={[styles.agentIcon, { borderColor: `${theme.primary}55`, backgroundColor: `${theme.primary}18` }]}>
+            <Text style={[styles.agentIconText, { color: theme.primary }]}>AI</Text>
+          </View>
+          <View style={styles.agentCopy}>
+            <Text style={[styles.agentTitle, { color: theme.text }]}>Autonomous agent</Text>
+            <Text style={[styles.agentText, { color: theme.muted }]}>
+              After you save a scan, run a background agent that reviews vehicle context, scan history, and mechanic-prep guidance, then returns prioritized next actions.
+            </Text>
+          </View>
+        </Card>
+
         <Card>
           <Text style={[styles.label, { color: theme.text }]}>Email</Text>
           <TextInput
@@ -368,6 +380,36 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 15,
     lineHeight: 22
+  },
+  agentPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14
+  },
+  agentIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  agentIconText: {
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  agentCopy: {
+    flex: 1
+  },
+  agentTitle: {
+    fontSize: 17,
+    fontWeight: "900",
+    marginBottom: 4
+  },
+  agentText: {
+    fontSize: 14,
+    lineHeight: 20
   },
   label: {
     fontSize: 14,
