@@ -7,7 +7,7 @@ import { useTheme } from "../hooks/useTheme";
 import { submitCodeLookup, submitIssueDescription } from "../services/api";
 import { Scan, Vehicle } from "../types";
 
-const CODE_PATTERN = /^[PCBU][0-9A-F]{4}$/;
+const CODE_PATTERN = /^[PCBU][0-3][0-9A-F]{3}$/;
 type LookupMode = "code" | "describe";
 
 export function CodeEntryScreen({

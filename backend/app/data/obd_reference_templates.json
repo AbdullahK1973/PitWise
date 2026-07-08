@@ -1,0 +1,117 @@
+{
+  "systems": {
+    "P": "Powertrain",
+    "C": "Chassis",
+    "B": "Body",
+    "U": "Network communication"
+  },
+  "origins": {
+    "0": "SAE generic",
+    "1": "manufacturer-specific",
+    "2": "SAE generic or manufacturer-defined",
+    "3": "SAE reserved or manufacturer-defined"
+  },
+  "family_templates": {
+    "P0": ["fuel_air", "Fuel and air metering / auxiliary emission control"],
+    "P1": ["fuel_air", "Fuel and air metering"],
+    "P2": ["fuel_air", "Fuel and air metering injector circuit"],
+    "P3": ["engine", "Ignition system or misfire"],
+    "P4": ["emissions", "Auxiliary emission control"],
+    "P5": ["drivetrain", "Vehicle speed, idle control, or input circuits"],
+    "P6": ["sensor", "Computer output or sensor circuit"],
+    "P7": ["transmission", "Transmission control"],
+    "P8": ["transmission", "Transmission control"],
+    "P9": ["transmission", "Transmission control"],
+    "PA": ["hybrid", "Hybrid or EV powertrain"],
+    "PB": ["hybrid", "Hybrid or EV powertrain"],
+    "PC": ["sensor", "Powertrain control circuit"],
+    "PD": ["engine", "Powertrain performance"],
+    "PE": ["engine", "Powertrain control"],
+    "PF": ["engine", "Powertrain reserved family"],
+    "C": ["brakes", "Chassis, brake, steering, or suspension control"],
+    "B": ["body", "Body, restraint, climate, or convenience system"],
+    "U": ["network", "Control module communication network"]
+  },
+  "category_defaults": {
+    "engine": {
+      "urgency": "moderate",
+      "drive_safety": "caution",
+      "likely_causes": ["Sensor or actuator fault", "Wiring or connector issue", "Mechanical condition affecting engine operation", "Module calibration or control issue"],
+      "repair_paths": ["Confirm the exact code and freeze-frame conditions", "Inspect related connectors, wiring, and grounds", "Compare live data to expected values", "Perform manufacturer pinpoint tests before replacing parts"],
+      "cost_range": "$120-$1,500+ depending on testing and root cause",
+      "mechanic_questions": ["What test confirmed the suspected engine fault?", "Are there related codes or freeze-frame clues?", "Can you show live data before recommending parts?"]
+    },
+    "fuel_air": {
+      "urgency": "moderate",
+      "drive_safety": "caution",
+      "likely_causes": ["Air leak or fuel delivery issue", "Dirty or failed airflow/pressure sensor", "Injector or fuel pressure concern", "Wiring or connector fault"],
+      "repair_paths": ["Check fuel trims and freeze-frame data", "Inspect intake hoses and vacuum lines", "Test sensor readings and fuel pressure", "Repair wiring or leaks before replacing major parts"],
+      "cost_range": "$90-$900+ depending on leak, sensor, or fuel-system testing",
+      "mechanic_questions": ["What do the fuel trims show?", "Was a smoke test or pressure test performed?", "Which data points to the part being recommended?"]
+    },
+    "emissions": {
+      "urgency": "low",
+      "drive_safety": "safe",
+      "likely_causes": ["EVAP leak or valve issue", "Oxygen sensor or catalyst monitor concern", "Exhaust leak", "Wiring or connector fault"],
+      "repair_paths": ["Check for related engine-running codes first", "Inspect hoses, caps, valves, and exhaust leaks", "Review monitor and sensor data", "Confirm the failed component with a test result"],
+      "cost_range": "$40-$2,500+ depending on cap, valve, sensor, or catalyst work",
+      "mechanic_questions": ["Was the emissions monitor data reviewed?", "Were leaks checked before parts were recommended?", "Can you show the failed test result?"]
+    },
+    "sensor": {
+      "urgency": "low",
+      "drive_safety": "safe",
+      "likely_causes": ["Sensor signal out of range", "Open or shorted circuit", "Corroded connector", "Control-module output issue"],
+      "repair_paths": ["Compare live sensor data to expected values", "Inspect connector pins, harness routing, and grounds", "Test power, ground, and signal circuits", "Replace the sensor only after circuit checks"],
+      "cost_range": "$80-$700+ depending on access and circuit repair",
+      "mechanic_questions": ["Was power, ground, and signal tested?", "What value was out of range?", "Was the connector inspected under load?"]
+    },
+    "drivetrain": {
+      "urgency": "moderate",
+      "drive_safety": "caution",
+      "likely_causes": ["Speed or position sensor fault", "ABS or drivetrain signal issue", "Damaged wiring", "Module communication or calibration concern"],
+      "repair_paths": ["Scan related ABS, stability, and powertrain modules", "Review live speed/position data", "Inspect wiring at moving or exposed areas", "Repair the confirmed signal fault"],
+      "cost_range": "$120-$1,200+ depending on sensor, wiring, or module testing",
+      "mechanic_questions": ["Which signal is missing or implausible?", "Were related modules scanned?", "Was wiring checked before sensor replacement?"]
+    },
+    "transmission": {
+      "urgency": "high",
+      "drive_safety": "caution",
+      "likely_causes": ["Transmission sensor or solenoid issue", "Low or contaminated fluid", "Wiring or connector fault", "Internal transmission condition"],
+      "repair_paths": ["Scan the transmission module for related codes", "Check fluid level and condition if serviceable", "Test solenoids, sensors, and harnesses", "Avoid major repairs without specific transmission data"],
+      "cost_range": "$150 diagnostic to $3,500+ for major transmission repair",
+      "mechanic_questions": ["What transmission-module data supports the repair?", "What does the fluid look like?", "Can you separate electrical, solenoid, and internal failure possibilities?"]
+    },
+    "hybrid": {
+      "urgency": "high",
+      "drive_safety": "caution",
+      "likely_causes": ["Hybrid battery or inverter concern", "High-voltage interlock or isolation issue", "Cooling system problem", "Wiring or module communication fault"],
+      "repair_paths": ["Have high-voltage systems tested by a qualified shop", "Scan hybrid control modules for related codes", "Check cooling and interlock data", "Request module data before approving expensive parts"],
+      "cost_range": "$150 diagnostic to $4,000+ depending on hybrid-system repair",
+      "mechanic_questions": ["Is the shop qualified for high-voltage diagnosis?", "Which module stored the code?", "What data confirms the high-voltage component is faulty?"]
+    },
+    "brakes": {
+      "urgency": "high",
+      "drive_safety": "caution",
+      "likely_causes": ["Wheel speed sensor issue", "ABS hydraulic or control fault", "Steering angle/yaw sensor data issue", "Wiring or connector damage"],
+      "repair_paths": ["Scan ABS and stability modules", "Inspect wheel sensors and harnesses", "Confirm hydraulic or module faults with tests", "Treat brake warning symptoms conservatively"],
+      "cost_range": "$120-$1,800+ depending on sensor, hydraulic, or module repair",
+      "mechanic_questions": ["Is the vehicle safe to drive?", "Which ABS/stability data is failing?", "Was wiring checked near the wheel or suspension?"]
+    },
+    "body": {
+      "urgency": "low",
+      "drive_safety": "safe",
+      "likely_causes": ["Body control module input issue", "Switch, actuator, or sensor fault", "Wiring or connector concern", "Low voltage or module communication issue"],
+      "repair_paths": ["Confirm which body module stored the code", "Test the switch, actuator, or sensor circuit", "Inspect connectors and grounds", "Check battery voltage and related module codes"],
+      "cost_range": "$80-$1,200+ depending on access and module involvement",
+      "mechanic_questions": ["Which body module set the code?", "Was the circuit tested before replacing parts?", "Are there low-voltage or communication codes too?"]
+    },
+    "network": {
+      "urgency": "moderate",
+      "drive_safety": "caution",
+      "likely_causes": ["Module offline or not communicating", "CAN/LIN wiring fault", "Low battery voltage", "Blown fuse or power/ground issue"],
+      "repair_paths": ["Scan all modules and identify who cannot communicate", "Check battery voltage, fuses, powers, and grounds", "Inspect network wiring and connectors", "Avoid module replacement until power and network tests pass"],
+      "cost_range": "$120-$2,000+ depending on wiring, power, ground, or module repair",
+      "mechanic_questions": ["Which module is missing from the network?", "Were power, ground, and fuses checked?", "Can you show the network scan report?"]
+    }
+  }
+}

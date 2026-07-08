@@ -11,7 +11,7 @@ SAFETY_CATEGORIES = {"brakes", "cooling", "oil_pressure", "charging", "steering"
 class DiagnosisGenerator:
     """AI boundary for PitWise.
 
-    Fallback mode is deterministic and seeded. Live mode is intentionally isolated
+    Fallback mode is deterministic and reference-data backed. Live mode is intentionally isolated
     so a real LLM provider can be added without changing routes or UI contracts.
     """
 
@@ -46,7 +46,7 @@ class DiagnosisGenerator:
 
         confidence = "This is a likely-direction guide based on the code and common repair patterns, not proof of a failed part."
         if live_requested:
-            confidence += " Live AI mode was requested, but the MVP is using the seeded fallback response until a provider is wired in."
+            confidence += " Live AI mode was requested, but the MVP is using the reference-data fallback response until a provider is wired in."
 
         return DiagnosisResponse(
             code=code_data.code,

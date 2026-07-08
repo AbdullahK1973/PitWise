@@ -102,7 +102,7 @@ class SymptomMatcher:
         scored.sort(key=lambda item: (-item[0], item[1].code))
         best_score, best_code = scored[0]
         note = (
-            f"Based on your description, PitWise matched this to {best_code.code} as the closest seeded OBD2 pattern. "
+            f"Based on your description, PitWise matched this to {best_code.code} as the closest OBD2 pattern. "
             "Treat it as a starting point and confirm with a scan when possible."
         )
         if len(scored) > 1 and scored[1][0] >= best_score - 1:

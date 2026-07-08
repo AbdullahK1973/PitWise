@@ -38,5 +38,5 @@ Open PitWise > Settings > Delete My Data. This deletes saved vehicle and scan hi
 ## Known Beta Limitations
 
 - Bluetooth adapter compatibility is still being tested.
-- Some codes may not be in the current reference database.
+- Some codes may only have general code-family guidance until vehicle-specific details are confirmed.
 - Guidance is informational and may not account for all vehicle-specific conditions.

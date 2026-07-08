@@ -67,7 +67,8 @@ In local development, the API can create SQLite tables and seed demo data on sta
 
 The API seeds SQLite on startup with:
 
-- 15 common OBD2 codes
+- curated detailed OBD2 guidance overrides
+- lazy generated guidance for the supported OBD2 DTC reference space, covering 65,536 `P/C/B/U` codes
 - a demo `2017 Toyota Camry`
 - demo scan history for `P0302` and `P0420`
 
@@ -176,9 +177,11 @@ Then restart Expo.
 - All diagnosis copy uses cautious wording such as likely causes, common paths, and may indicate.
 - Safety-sensitive categories are treated conservatively in the AI service.
 
-## Seeded Codes
+## OBD2 Reference Coverage
 
-`P0300`, `P0301`, `P0302`, `P0420`, `P0171`, `P0455`, `P0442`, `P0128`, `P0113`, `P0010`, `P0011`, `P0021`, `P0500`, `P0700`, `P0141`.
+PitWise keeps detailed hand-authored guidance in `backend/app/data/obd_curated_codes.json` and broad code-family templates in `backend/app/data/obd_reference_templates.json`.
+
+The backend does not preload thousands of rows into app code. It seeds the curated overrides, then lazily materializes valid generated DTC references such as `P0A80`, `U0100`, or `C1234` only when they are requested. This covers 65,536 standard-shaped `P/C/B/U` codes while keeping startup and source files small.
 
 ## Validation
 

@@ -1,7 +1,7 @@
 import { AgentTask, AuthResponse, AuthUser, Diagnosis, Scan, Urgency, Vehicle, VehicleInput } from "../types";
 import { addLocalScan, getLocalAuthUser, getLocalScans, getLocalVehicle, saveLocalVehicle } from "./storage";
 
-type SeededCode = {
+type ReferenceCode = {
   code: string;
   title: string;
   explanation: string;
@@ -14,7 +14,7 @@ type SeededCode = {
   category: string;
 };
 
-const SEEDED_CODES: SeededCode[] = [
+const CURATED_CODES: ReferenceCode[] = [
   {
     code: "P0300",
     title: "Random or Multiple Cylinder Misfire",
@@ -197,9 +197,124 @@ const SEEDED_CODES: SeededCode[] = [
   }
 ];
 
-const CODE_PATTERN = /^[PCBU][0-9A-F]{4}$/;
+const CODE_PATTERN = /^[PCBU][0-3][0-9A-F]{3}$/;
 const SAFETY_CATEGORIES = new Set(["brakes", "cooling", "oil_pressure", "charging", "steering", "transmission"]);
 const demoAgentTasks = new Map<string, AgentTask>();
+const GENERATED_SYSTEMS: Record<string, string> = {
+  P: "Powertrain",
+  C: "Chassis",
+  B: "Body",
+  U: "Network communication"
+};
+const GENERATED_ORIGINS: Record<string, string> = {
+  "0": "SAE generic",
+  "1": "manufacturer-specific",
+  "2": "SAE generic or manufacturer-defined",
+  "3": "SAE reserved or manufacturer-defined"
+};
+const GENERATED_FAMILY_TEMPLATES: Record<string, [string, string]> = {
+  P0: ["fuel_air", "Fuel and air metering / auxiliary emission control"],
+  P1: ["fuel_air", "Fuel and air metering"],
+  P2: ["fuel_air", "Fuel and air metering injector circuit"],
+  P3: ["engine", "Ignition system or misfire"],
+  P4: ["emissions", "Auxiliary emission control"],
+  P5: ["drivetrain", "Vehicle speed, idle control, or input circuits"],
+  P6: ["sensor", "Computer output or sensor circuit"],
+  P7: ["transmission", "Transmission control"],
+  P8: ["transmission", "Transmission control"],
+  P9: ["transmission", "Transmission control"],
+  PA: ["hybrid", "Hybrid or EV powertrain"],
+  PB: ["hybrid", "Hybrid or EV powertrain"],
+  PC: ["sensor", "Powertrain control circuit"],
+  PD: ["engine", "Powertrain performance"],
+  PE: ["engine", "Powertrain control"],
+  PF: ["engine", "Powertrain reserved family"],
+  C: ["brakes", "Chassis, brake, steering, or suspension control"],
+  B: ["body", "Body, restraint, climate, or convenience system"],
+  U: ["network", "Control module communication network"]
+};
+const GENERATED_CATEGORY_DEFAULTS: Record<string, Omit<ReferenceCode, "code" | "title" | "explanation" | "category">> = {
+  engine: {
+    urgency: "moderate",
+    driveSafety: "caution",
+    likelyCauses: ["Sensor or actuator fault", "Wiring or connector issue", "Mechanical condition affecting engine operation", "Module calibration or control issue"],
+    repairPaths: ["Confirm the exact code and freeze-frame conditions", "Inspect related connectors, wiring, and grounds", "Compare live data to expected values", "Perform manufacturer pinpoint tests before replacing parts"],
+    costRange: "$120-$1,500+ depending on testing and root cause",
+    mechanicQuestions: ["What test confirmed the suspected engine fault?", "Are there related codes or freeze-frame clues?", "Can you show live data before recommending parts?"]
+  },
+  fuel_air: {
+    urgency: "moderate",
+    driveSafety: "caution",
+    likelyCauses: ["Air leak or fuel delivery issue", "Dirty or failed airflow/pressure sensor", "Injector or fuel pressure concern", "Wiring or connector fault"],
+    repairPaths: ["Check fuel trims and freeze-frame data", "Inspect intake hoses and vacuum lines", "Test sensor readings and fuel pressure", "Repair wiring or leaks before replacing major parts"],
+    costRange: "$90-$900+ depending on leak, sensor, or fuel-system testing",
+    mechanicQuestions: ["What do the fuel trims show?", "Was a smoke test or pressure test performed?", "Which data points to the part being recommended?"]
+  },
+  emissions: {
+    urgency: "low",
+    driveSafety: "safe",
+    likelyCauses: ["EVAP leak or valve issue", "Oxygen sensor or catalyst monitor concern", "Exhaust leak", "Wiring or connector fault"],
+    repairPaths: ["Check for related engine-running codes first", "Inspect hoses, caps, valves, and exhaust leaks", "Review monitor and sensor data", "Confirm the failed component with a test result"],
+    costRange: "$40-$2,500+ depending on cap, valve, sensor, or catalyst work",
+    mechanicQuestions: ["Was the emissions monitor data reviewed?", "Were leaks checked before parts were recommended?", "Can you show the failed test result?"]
+  },
+  sensor: {
+    urgency: "low",
+    driveSafety: "safe",
+    likelyCauses: ["Sensor signal out of range", "Open or shorted circuit", "Corroded connector", "Control-module output issue"],
+    repairPaths: ["Compare live sensor data to expected values", "Inspect connector pins, harness routing, and grounds", "Test power, ground, and signal circuits", "Replace the sensor only after circuit checks"],
+    costRange: "$80-$700+ depending on access and circuit repair",
+    mechanicQuestions: ["Was power, ground, and signal tested?", "What value was out of range?", "Was the connector inspected under load?"]
+  },
+  drivetrain: {
+    urgency: "moderate",
+    driveSafety: "caution",
+    likelyCauses: ["Speed or position sensor fault", "ABS or drivetrain signal issue", "Damaged wiring", "Module communication or calibration concern"],
+    repairPaths: ["Scan related ABS, stability, and powertrain modules", "Review live speed/position data", "Inspect wiring at moving or exposed areas", "Repair the confirmed signal fault"],
+    costRange: "$120-$1,200+ depending on sensor, wiring, or module testing",
+    mechanicQuestions: ["Which signal is missing or implausible?", "Were related modules scanned?", "Was wiring checked before sensor replacement?"]
+  },
+  transmission: {
+    urgency: "high",
+    driveSafety: "caution",
+    likelyCauses: ["Transmission sensor or solenoid issue", "Low or contaminated fluid", "Wiring or connector fault", "Internal transmission condition"],
+    repairPaths: ["Scan the transmission module for related codes", "Check fluid level and condition if serviceable", "Test solenoids, sensors, and harnesses", "Avoid major repairs without specific transmission data"],
+    costRange: "$150 diagnostic to $3,500+ for major transmission repair",
+    mechanicQuestions: ["What transmission-module data supports the repair?", "What does the fluid look like?", "Can you separate electrical, solenoid, and internal failure possibilities?"]
+  },
+  hybrid: {
+    urgency: "high",
+    driveSafety: "caution",
+    likelyCauses: ["Hybrid battery or inverter concern", "High-voltage interlock or isolation issue", "Cooling system problem", "Wiring or module communication fault"],
+    repairPaths: ["Have high-voltage systems tested by a qualified shop", "Scan hybrid control modules for related codes", "Check cooling and interlock data", "Request module data before approving expensive parts"],
+    costRange: "$150 diagnostic to $4,000+ depending on hybrid-system repair",
+    mechanicQuestions: ["Is the shop qualified for high-voltage diagnosis?", "Which module stored the code?", "What data confirms the high-voltage component is faulty?"]
+  },
+  brakes: {
+    urgency: "high",
+    driveSafety: "caution",
+    likelyCauses: ["Wheel speed sensor issue", "ABS hydraulic or control fault", "Steering angle/yaw sensor data issue", "Wiring or connector damage"],
+    repairPaths: ["Scan ABS and stability modules", "Inspect wheel sensors and harnesses", "Confirm hydraulic or module faults with tests", "Treat brake warning symptoms conservatively"],
+    costRange: "$120-$1,800+ depending on sensor, hydraulic, or module repair",
+    mechanicQuestions: ["Is the vehicle safe to drive?", "Which ABS/stability data is failing?", "Was wiring checked near the wheel or suspension?"]
+  },
+  body: {
+    urgency: "low",
+    driveSafety: "safe",
+    likelyCauses: ["Body control module input issue", "Switch, actuator, or sensor fault", "Wiring or connector concern", "Low voltage or module communication issue"],
+    repairPaths: ["Confirm which body module stored the code", "Test the switch, actuator, or sensor circuit", "Inspect connectors and grounds", "Check battery voltage and related module codes"],
+    costRange: "$80-$1,200+ depending on access and module involvement",
+    mechanicQuestions: ["Which body module set the code?", "Was the circuit tested before replacing parts?", "Are there low-voltage or communication codes too?"]
+  },
+  network: {
+    urgency: "moderate",
+    driveSafety: "caution",
+    likelyCauses: ["Module offline or not communicating", "CAN/LIN wiring fault", "Low battery voltage", "Blown fuse or power/ground issue"],
+    repairPaths: ["Scan all modules and identify who cannot communicate", "Check battery voltage, fuses, powers, and grounds", "Inspect network wiring and connectors", "Avoid module replacement until power and network tests pass"],
+    costRange: "$120-$2,000+ depending on wiring, power, ground, or module repair",
+    mechanicQuestions: ["Which module is missing from the network?", "Were power, ground, and fuses checked?", "Can you show the network scan report?"]
+  }
+};
 const SYMPTOM_KEYWORDS: Record<string, string[]> = {
   engine: [
     "check",
@@ -288,8 +403,8 @@ export async function demoSubmitCodeLookup(vehicleId: number | undefined, code: 
   const normalized = code.trim().toUpperCase().replace(/\s/g, "");
   if (!CODE_PATTERN.test(normalized)) throw new Error("Enter a valid OBD2 code like P0302.");
 
-  const codeData = SEEDED_CODES.find((item) => item.code === normalized);
-  if (!codeData) throw new Error("That code is not in the MVP seed set yet. Try a common code such as P0302, P0420, or P0171.");
+  const codeData = findReferenceCode(normalized);
+  if (!codeData) throw new Error("That code is outside the supported OBD2 reference format. Try a standard code such as P0302.");
 
   return createAndStoreScan(codeData, vehicleId, symptoms);
 }
@@ -297,9 +412,9 @@ export async function demoSubmitCodeLookup(vehicleId: number | undefined, code: 
 export async function demoSubmitIssueDescription(vehicleId: number | undefined, description: string): Promise<Scan> {
   const match = matchDescription(description);
   if (!match) {
-    throw new Error("PitWise could not match that description to the current seeded OBD2 set. Try adding symptoms like rough idle, fuel smell, overheating, shifting, or exhaust.");
+    throw new Error("PitWise could not match that description to the current OBD2 guidance set. Try adding symptoms like rough idle, fuel smell, overheating, shifting, or exhaust.");
   }
-  const note = `Based on your description, PitWise matched this to ${match.code} as the closest seeded OBD2 pattern. Treat it as a starting point and confirm with a scan when possible.`;
+  const note = `Based on your description, PitWise matched this to ${match.code} as the closest OBD2 pattern. Treat it as a starting point and confirm with a scan when possible.`;
   return createAndStoreScan(match, vehicleId, description, note);
 }
 
@@ -369,7 +484,30 @@ export async function demoGetAgentTask(taskId: string): Promise<AgentTask> {
   return task;
 }
 
-async function createAndStoreScan(codeData: SeededCode, vehicleId: number | undefined, symptoms?: string, symptomsNote?: string): Promise<Scan> {
+function findReferenceCode(code: string): ReferenceCode | null {
+  return CURATED_CODES.find((item) => item.code === code) ?? createGeneratedCode(code);
+}
+
+function createGeneratedCode(code: string): ReferenceCode | null {
+  if (!CODE_PATTERN.test(code)) return null;
+
+  const system = code[0];
+  const origin = code[1];
+  const family = code[2];
+  const [category, familyTitle] = GENERATED_FAMILY_TEMPLATES[`${system}${family}`] ?? GENERATED_FAMILY_TEMPLATES[system];
+  const defaults = GENERATED_CATEGORY_DEFAULTS[category];
+  const systemName = GENERATED_SYSTEMS[system];
+  const originLabel = GENERATED_ORIGINS[origin];
+  return {
+    code,
+    title: `${originLabel} ${systemName} ${familyTitle}`.slice(0, 180),
+    explanation: `${code} is a ${originLabel.toLowerCase()} ${systemName.toLowerCase()} diagnostic trouble code in the ${familyTitle.toLowerCase()} family. PitWise has general guidance for this code family, but the exact component test can vary by year, make, model, engine, and module. Use this as mechanic-prep guidance and ask the shop to confirm the fault with scan data and pinpoint tests.`,
+    category,
+    ...defaults
+  };
+}
+
+async function createAndStoreScan(codeData: ReferenceCode, vehicleId: number | undefined, symptoms?: string, symptomsNote?: string): Promise<Scan> {
   const [vehicle, user] = await Promise.all([getLocalVehicle(), getLocalAuthUser()]);
   const diagnosis = createDiagnosis(codeData, symptoms, symptomsNote);
   const scan: Scan = {
@@ -387,7 +525,7 @@ async function createAndStoreScan(codeData: SeededCode, vehicleId: number | unde
   return scan;
 }
 
-function createDiagnosis(codeData: SeededCode, symptoms?: string, symptomsNote?: string): Diagnosis {
+function createDiagnosis(codeData: ReferenceCode, symptoms?: string, symptomsNote?: string): Diagnosis {
   return {
     code: codeData.code,
     title: codeData.title,
@@ -401,7 +539,7 @@ function createDiagnosis(codeData: SeededCode, symptoms?: string, symptomsNote?:
     proof_to_request: proofToRequest(codeData.category),
     upsell_watchouts: upsellWatchouts(codeData.category),
     before_approving_repairs: beforeApproving(codeData.category),
-    confidence_note: "This is a browser-local demo guide based on seeded code patterns, not proof of a failed part.",
+    confidence_note: "This is a browser-local demo guide based on OBD2 reference patterns, not proof of a failed part.",
     disclaimer: "PitWise provides guidance and preparation, not a confirmed diagnosis or a replacement for a qualified mechanic.",
     symptoms_note: symptoms?.trim()
       ? symptomsNote ?? "You also mentioned symptoms. Share those exact details with the mechanic because they can help separate a common simple fix from a deeper issue."
@@ -467,17 +605,17 @@ function vehicleLabel(vehicle: Vehicle | null): string {
   return vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "the saved account";
 }
 
-function matchDescription(description: string): SeededCode | null {
+function matchDescription(description: string): ReferenceCode | null {
   const tokens = tokenize(description);
   if (!tokens.size) return null;
 
-  const scored = SEEDED_CODES.map((codeData) => ({ codeData, score: scoreCode(codeData, tokens) }))
+  const scored = CURATED_CODES.map((codeData) => ({ codeData, score: scoreCode(codeData, tokens) }))
     .filter((item) => item.score >= 3)
     .sort((a, b) => b.score - a.score || a.codeData.code.localeCompare(b.codeData.code));
   return scored[0]?.codeData ?? null;
 }
 
-function scoreCode(codeData: SeededCode, tokens: Set<string>): number {
+function scoreCode(codeData: ReferenceCode, tokens: Set<string>): number {
   const text = `${codeData.code} ${codeData.title} ${codeData.explanation} ${codeData.likelyCauses.join(" ")} ${codeData.repairPaths.join(" ")} ${codeData.category}`;
   const codeTokens = tokenize(text);
   const symptomTokens = new Set(SYMPTOM_KEYWORDS[codeData.category] ?? []);
@@ -502,14 +640,14 @@ function tokenize(value: string): Set<string> {
   return new Set((value.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((token) => token.length > 1));
 }
 
-function conservativeUrgency(codeData: SeededCode): Urgency {
+function conservativeUrgency(codeData: ReferenceCode): Urgency {
   if (SAFETY_CATEGORIES.has(codeData.category) && ["low", "moderate"].includes(codeData.urgency)) {
     return ["transmission", "oil_pressure", "brakes", "steering"].includes(codeData.category) ? "high" : "moderate";
   }
   return codeData.urgency;
 }
 
-function conservativeSafety(codeData: SeededCode): Diagnosis["drive_safety_guidance"] {
+function conservativeSafety(codeData: ReferenceCode): Diagnosis["drive_safety_guidance"] {
   const urgency = conservativeUrgency(codeData);
   if (urgency === "critical") return "avoid driving";
   if (SAFETY_CATEGORIES.has(codeData.category) && codeData.driveSafety === "safe") return "caution";

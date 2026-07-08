@@ -1,7 +1,6 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -9,6 +8,7 @@ from app.database import get_db
 from app.models import AppUser, ObdCode, Scan, Vehicle
 from app.schemas import CodeLookupRequest, CodeSearchResult, DiagnosisResponse, ScanRead, SymptomLookupRequest
 from app.services.ai_service import DiagnosisGenerator
+from app.services.obd_reference import ensure_reference_code, search_reference_codes
 from app.services.symptom_matcher import SymptomMatcher
 from app.utils.code_normalizer import is_valid_obd_code, normalize_obd_code
 
@@ -25,11 +25,11 @@ def lookup_code(
     if not is_valid_obd_code(code):
         raise HTTPException(status_code=422, detail="Enter a valid OBD2 code like P0302.")
 
-    code_data = db.get(ObdCode, code)
+    code_data = ensure_reference_code(db, code)
     if not code_data:
         raise HTTPException(
             status_code=404,
-            detail="That code is not in the MVP seed set yet. Try a common code such as P0302, P0420, or P0171.",
+            detail="That code is outside the supported OBD2 reference format. Try a standard code such as P0302.",
         )
 
     vehicle = _resolve_vehicle(db, current_user, payload.vehicle_id)
@@ -61,7 +61,7 @@ def lookup_from_description(
     if not match:
         raise HTTPException(
             status_code=404,
-            detail="PitWise could not match that description to the current seeded OBD2 set. Try adding symptoms like rough idle, fuel smell, overheating, shifting, or exhaust.",
+            detail="PitWise could not match that description to the current OBD2 guidance set. Try adding symptoms like rough idle, fuel smell, overheating, shifting, or exhaust.",
         )
 
     vehicle = _resolve_vehicle(db, current_user, payload.vehicle_id)
@@ -87,19 +87,15 @@ def fetch_code_explanation(code: str, symptoms: str | None = None, db: Session =
     normalized = normalize_obd_code(code)
     if not is_valid_obd_code(normalized):
         raise HTTPException(status_code=422, detail="Enter a valid OBD2 code like P0302.")
-    code_data = db.get(ObdCode, normalized)
+    code_data = ensure_reference_code(db, normalized)
     if not code_data:
-        raise HTTPException(status_code=404, detail="Code not found in seed data")
+        raise HTTPException(status_code=404, detail="Code not found in the supported OBD2 reference format")
     return DiagnosisGenerator().generate(code_data, symptoms)
 
 
 @router.get("/codes", response_model=list[CodeSearchResult])
-def search_codes(q: str | None = None, db: Session = Depends(get_db)) -> list[ObdCode]:
-    query = db.query(ObdCode)
-    if q:
-        term = f"%{q.upper()}%"
-        query = query.filter(or_(ObdCode.code.like(term), ObdCode.title.like(f"%{q}%")))
-    return query.order_by(ObdCode.code.asc()).limit(50).all()
+def search_codes(q: str | None = None, db: Session = Depends(get_db)) -> list[CodeSearchResult]:
+    return search_reference_codes(q, db)
 
 
 @router.get("/scans", response_model=list[ScanRead])

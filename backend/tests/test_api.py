@@ -29,6 +29,7 @@ from pydantic import ValidationError
 
 from app.config import Settings
 from app.main import app
+from app.services.obd_reference import REFERENCE_CODE_COUNT
 
 CLIENT_HEADERS = {"X-Pitwise-Client-Id": "test-client-12345"}
 OTHER_CLIENT_HEADERS = {"X-Pitwise-Client-Id": "other-client-12345"}
@@ -52,7 +53,7 @@ def test_database_health_check(client):
     assert response.json() == {"status": "ok", "database": "available"}
 
 
-def test_seeded_code_lookup_creates_scan(client):
+def test_curated_code_lookup_creates_scan(client):
     vehicle = client.post(
         "/vehicles",
         headers=CLIENT_HEADERS,
@@ -69,6 +70,30 @@ def test_seeded_code_lookup_creates_scan(client):
     assert data["urgency"] == "high"
     assert "definitely" not in data["diagnosis"]["plain_english_explanation"].lower()
     assert data["diagnosis"]["disclaimer"]
+
+
+def test_generated_reference_code_lookup_creates_scan(client):
+    assert REFERENCE_CODE_COUNT > 7000
+
+    vehicle = client.post(
+        "/vehicles",
+        headers={"X-Pitwise-Client-Id": "generated-code-client-12345"},
+        json={"make": "Toyota", "model": "Prius", "year": 2015, "engine": "Hybrid", "mileage": 120000},
+    ).json()
+    response = client.post(
+        "/diagnosis/lookup",
+        headers={"X-Pitwise-Client-Id": "generated-code-client-12345"},
+        json={"vehicle_id": vehicle["id"], "code": "p0a80", "symptoms": "hybrid warning light"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["code"] == "P0A80"
+    assert "Hybrid or EV powertrain" in data["diagnosis"]["title"]
+    assert data["diagnosis"]["likely_causes"]
+
+    search_results = client.get("/codes", params={"q": "P0A8"}).json()
+    assert any(item["code"] == "P0A80" for item in search_results)
 
 
 def test_invalid_code_rejected(client):
@@ -95,7 +120,7 @@ def test_describe_issue_lookup_creates_matched_scan(client):
     assert response.status_code == 200
     data = response.json()
     assert data["code"] in {"P0300", "P0301", "P0302"}
-    assert "closest seeded OBD2 pattern" in data["diagnosis"]["symptoms_note"]
+    assert "closest OBD2 pattern" in data["diagnosis"]["symptoms_note"]
     assert data["diagnosis"]["likely_causes"]
     assert data["diagnosis"]["estimated_repair_cost_range"]
 

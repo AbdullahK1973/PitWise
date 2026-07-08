@@ -1,20 +1,18 @@
-import json
-
 from sqlalchemy.orm import Session
 
 from app.models import AppUser, ObdCode, Scan, Vehicle
-from app.seed.obd_codes import SEEDED_CODES
 from app.services.ai_service import DiagnosisGenerator
+from app.services.obd_reference import iter_curated_code_payloads, to_model_payload
 
 
 def seed_database(db: Session, include_demo_data: bool = True) -> None:
-    for item in SEEDED_CODES:
+    for item in iter_curated_code_payloads():
         existing = db.get(ObdCode, item["code"])
         if existing:
-            for key, value in _to_model_payload(item).items():
+            for key, value in to_model_payload(item).items():
                 setattr(existing, key, value)
         else:
-            db.add(ObdCode(**_to_model_payload(item)))
+            db.add(ObdCode(**to_model_payload(item)))
 
     if not include_demo_data:
         db.commit()
@@ -55,18 +53,3 @@ def seed_database(db: Session, include_demo_data: bool = True) -> None:
                 )
 
     db.commit()
-
-
-def _to_model_payload(item: dict) -> dict:
-    return {
-        "code": item["code"],
-        "title": item["title"],
-        "explanation": item["explanation"],
-        "urgency": item["urgency"],
-        "drive_safety": item["drive_safety"],
-        "likely_causes": json.dumps(item["likely_causes"]),
-        "repair_paths": json.dumps(item["repair_paths"]),
-        "cost_range": item["cost_range"],
-        "mechanic_questions": json.dumps(item["mechanic_questions"]),
-        "category": item.get("category", "general"),
-    }

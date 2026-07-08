@@ -1,7 +1,7 @@
 import re
 
 
-CODE_PATTERN = re.compile(r"^[PCBU][0-9A-F]{4}$")
+CODE_PATTERN = re.compile(r"^[PCBU][0-3][0-9A-F]{3}$")
 
 
 def normalize_obd_code(raw_code: str) -> str:
