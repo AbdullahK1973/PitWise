@@ -4,6 +4,10 @@ PitWise is an MVP mobile-first car issue translator and second-opinion assistant
 
 The product focuses on plain-English explanations, conservative urgency guidance, likely causes, common repair paths, rough cost placeholders, and mechanic prep questions.
 
+## Agentic Workflow Evidence
+
+For a concise walkthrough of the autonomous background workflow, see `docs/AGENTIC_WORKFLOW_EVIDENCE.md`.
+
 ## Project Tree
 
 ```text
