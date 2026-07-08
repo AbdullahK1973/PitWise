@@ -1,6 +1,7 @@
 import atexit
 import os
 import tempfile
+import time
 
 test_db = tempfile.NamedTemporaryFile(prefix="pitwise-test-", suffix=".db", delete=False)
 test_db.close()
@@ -149,6 +150,57 @@ def test_user_data_isolation(client):
     assert first_vehicle["user_id"] != second_vehicle["user_id"]
 
 
+def test_agent_task_runs_in_background_and_reports_backend_work(client):
+    vehicle = client.post(
+        "/vehicles",
+        headers={"X-Pitwise-Client-Id": "agent-client-12345"},
+        json={"make": "Toyota", "model": "RAV4", "year": 2018, "engine": "2.5L I4", "mileage": 91600},
+    ).json()
+    scan = client.post(
+        "/diagnosis/lookup",
+        headers={"X-Pitwise-Client-Id": "agent-client-12345"},
+        json={"vehicle_id": vehicle["id"], "code": "P0171", "symptoms": "rough idle after cold start"},
+    ).json()
+
+    response = client.post(
+        "/agent/tasks",
+        headers={"X-Pitwise-Client-Id": "agent-client-12345"},
+        json={"goal": "Prepare my shop visit", "scan_id": scan["id"]},
+    )
+
+    assert response.status_code == 202
+    task = response.json()
+    assert task["status"] in {"queued", "running", "completed"}
+
+    task = _wait_for_agent_task(client, task["id"], {"X-Pitwise-Client-Id": "agent-client-12345"})
+    assert task["status"] == "completed"
+    assert task["progress"] == 100
+    assert task["result"]["backend_calls"] == ["GET /vehicles/main", "GET /scans", f"GET /mechanic-prep/{scan['id']}"]
+    assert task["result"]["next_actions"]
+
+
+def test_agent_task_rejects_other_users_scan(client):
+    other_vehicle = client.post(
+        "/vehicles",
+        headers={"X-Pitwise-Client-Id": "agent-other-client-12345"},
+        json={"make": "Honda", "model": "Fit", "year": 2015, "engine": None, "mileage": None},
+    ).json()
+    other_scan = client.post(
+        "/diagnosis/lookup",
+        headers={"X-Pitwise-Client-Id": "agent-other-client-12345"},
+        json={"vehicle_id": other_vehicle["id"], "code": "P0420"},
+    ).json()
+
+    response = client.post(
+        "/agent/tasks",
+        headers={"X-Pitwise-Client-Id": "agent-client-12345"},
+        json={"goal": "Analyze scan", "scan_id": other_scan["id"]},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Scan not found"
+
+
 def test_delete_my_data_removes_only_current_user(client):
     first_vehicle = client.post(
         "/vehicles",
@@ -217,3 +269,14 @@ def test_production_settings_disable_startup_database_mutations():
             seed_database_on_startup=True,
             seed_demo_data=False,
         )
+
+
+def _wait_for_agent_task(client, task_id: str, headers: dict[str, str]) -> dict:
+    for _ in range(20):
+        response = client.get(f"/agent/tasks/{task_id}", headers=headers)
+        assert response.status_code == 200
+        task = response.json()
+        if task["status"] in {"completed", "failed"}:
+            return task
+        time.sleep(0.05)
+    return task

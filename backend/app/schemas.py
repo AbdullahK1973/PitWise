@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 Urgency = Literal["low", "moderate", "high", "critical"]
 DriveSafety = Literal["safe", "caution", "avoid driving"]
+AgentTaskStatus = Literal["queued", "running", "completed", "failed"]
 
 
 class VehicleBase(BaseModel):
@@ -111,3 +112,41 @@ class CodeSearchResult(BaseModel):
     drive_safety: DriveSafety
 
     model_config = {"from_attributes": True}
+
+
+class AgentTaskCreate(BaseModel):
+    goal: str = Field(default="Prepare my next repair decision", min_length=3, max_length=180)
+    scan_id: int | None = None
+
+
+class AgentActivity(BaseModel):
+    label: str
+    status: str
+    detail: str
+
+
+class AgentAction(BaseModel):
+    title: str
+    detail: str
+    priority: Urgency
+
+
+class AgentTaskResult(BaseModel):
+    summary: str
+    backend_calls: list[str]
+    next_actions: list[AgentAction]
+
+
+class AgentTaskRead(BaseModel):
+    id: str
+    user_id: int
+    goal: str
+    scan_id: int | None
+    status: AgentTaskStatus
+    progress: int
+    activities: list[AgentActivity]
+    result: AgentTaskResult | None
+    error: str | None
+    created_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None

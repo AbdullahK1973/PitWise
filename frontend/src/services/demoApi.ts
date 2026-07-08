@@ -1,4 +1,4 @@
-import { AuthResponse, AuthUser, Diagnosis, Scan, Urgency, Vehicle, VehicleInput } from "../types";
+import { AgentTask, AuthResponse, AuthUser, Diagnosis, Scan, Urgency, Vehicle, VehicleInput } from "../types";
 import { addLocalScan, getLocalAuthUser, getLocalScans, getLocalVehicle, saveLocalVehicle } from "./storage";
 
 type SeededCode = {
@@ -199,6 +199,7 @@ const SEEDED_CODES: SeededCode[] = [
 
 const CODE_PATTERN = /^[PCBU][0-9A-F]{4}$/;
 const SAFETY_CATEGORIES = new Set(["brakes", "cooling", "oil_pressure", "charging", "steering", "transmission"]);
+const demoAgentTasks = new Map<string, AgentTask>();
 
 export async function demoLoginWithEmail(email: string, displayName?: string): Promise<AuthResponse> {
   const normalized = email.trim().toLowerCase();
@@ -256,6 +257,65 @@ export async function demoGetMechanicPrep(scanId: number): Promise<Diagnosis> {
   return scan.diagnosis;
 }
 
+export async function demoStartAgentTask(goal: string, scanId?: number): Promise<AgentTask> {
+  const [vehicle, scans, user] = await Promise.all([getLocalVehicle(), getLocalScans(), getLocalAuthUser()]);
+  const selectedScan = scanId ? scans.find((scan) => scan.id === scanId) : scans[0];
+  if (scanId && !selectedScan) throw new Error("Scan not found");
+
+  const now = new Date().toISOString();
+  const task: AgentTask = {
+    id: `demo-agent-${Date.now()}`,
+    user_id: user?.id ?? 1,
+    goal: goal.trim() || "Prepare my next repair decision",
+    scan_id: selectedScan?.id ?? null,
+    status: "running",
+    progress: 25,
+    activities: [
+      {
+        label: "Starting autonomous agent",
+        status: "running",
+        detail: "The demo agent is checking local vehicle and scan history."
+      }
+    ],
+    result: null,
+    error: null,
+    created_at: now,
+    updated_at: now,
+    completed_at: null
+  };
+  demoAgentTasks.set(task.id, task);
+
+  setTimeout(() => {
+    const current = demoAgentTasks.get(task.id);
+    if (!current) return;
+    const completedAt = new Date().toISOString();
+    demoAgentTasks.set(task.id, {
+      ...current,
+      status: "completed",
+      progress: 100,
+      activities: [
+        ...current.activities,
+        {
+          label: "Preparing action plan",
+          status: "completed",
+          detail: selectedScan ? `Reviewed ${selectedScan.code} and built next actions.` : "Prepared a setup plan because no scan is saved yet."
+        }
+      ],
+      result: selectedScan ? createDemoAgentScanResult(current.goal, vehicle, scans, selectedScan) : createDemoAgentSetupResult(current.goal, vehicle),
+      updated_at: completedAt,
+      completed_at: completedAt
+    });
+  }, 900);
+
+  return task;
+}
+
+export async function demoGetAgentTask(taskId: string): Promise<AgentTask> {
+  const task = demoAgentTasks.get(taskId);
+  if (!task) throw new Error("Agent task not found");
+  return task;
+}
+
 async function createAndStoreScan(codeData: SeededCode, vehicleId: number | undefined, symptoms?: string, symptomsNote?: string): Promise<Scan> {
   const [vehicle, user] = await Promise.all([getLocalVehicle(), getLocalAuthUser()]);
   const diagnosis = createDiagnosis(codeData, symptoms, symptomsNote);
@@ -294,6 +354,54 @@ function createDiagnosis(codeData: SeededCode, symptoms?: string, symptomsNote?:
       ? symptomsNote ?? "You also mentioned symptoms. Share those exact details with the mechanic because they can help separate a common simple fix from a deeper issue."
       : null
   };
+}
+
+function createDemoAgentScanResult(goal: string, vehicle: Vehicle | null, scans: Scan[], scan: Scan): AgentTask["result"] {
+  const diagnosis = scan.diagnosis;
+  return {
+    summary: `Autonomous agent completed '${goal}' for ${vehicleLabel(vehicle)}. The latest priority is ${scan.code}: ${diagnosis.title}.`,
+    backend_calls: ["GET /vehicles/main", "GET /scans", `GET /mechanic-prep/${scan.id}`],
+    next_actions: [
+      {
+        title: "Confirm the drive decision",
+        detail: diagnosis.confidence_note,
+        priority: diagnosis.urgency
+      },
+      {
+        title: "Request proof before parts",
+        detail: diagnosis.proof_to_request[0] ?? "Ask for test results that confirm the suspected cause.",
+        priority: diagnosis.urgency
+      },
+      {
+        title: "Use the approval gate",
+        detail: diagnosis.before_approving_repairs[0] ?? "Ask for a written estimate before approving repairs.",
+        priority: scans.length > 1 ? "moderate" : "low"
+      }
+    ]
+  };
+}
+
+function createDemoAgentSetupResult(goal: string, vehicle: Vehicle | null): AgentTask["result"] {
+  return {
+    summary: `Autonomous agent completed '${goal}' for ${vehicleLabel(vehicle)}. No scan is saved yet, so the next useful task is capturing symptoms or an OBD2 code.`,
+    backend_calls: ["GET /vehicles/main", "GET /scans"],
+    next_actions: [
+      {
+        title: "Capture the current issue",
+        detail: "Enter an OBD2 code or describe what the vehicle is doing.",
+        priority: "moderate"
+      },
+      {
+        title: "Verify vehicle details",
+        detail: "Confirm year, make, model, mileage, and engine before relying on repair guidance.",
+        priority: "low"
+      }
+    ]
+  };
+}
+
+function vehicleLabel(vehicle: Vehicle | null): string {
+  return vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "the saved account";
 }
 
 function matchDescription(description: string): SeededCode | null {

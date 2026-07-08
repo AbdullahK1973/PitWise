@@ -15,10 +15,10 @@ import { LoginScreen } from "./src/screens/LoginScreen";
 import { MechanicPrepScreen } from "./src/screens/MechanicPrepScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
-import { getScanHistory, getVehicle } from "./src/services/api";
+import { getAgentTask, getScanHistory, getVehicle, startAgentTask } from "./src/services/api";
 import { getLocalAuthUser, getLocalVehicle, saveLocalVehicle } from "./src/services/storage";
 import { colors, makeTheme } from "./src/theme/theme";
-import { AppScreen, AuthUser, Scan, Vehicle } from "./src/types";
+import { AgentTask, AppScreen, AuthUser, Scan, Vehicle } from "./src/types";
 
 export default function App() {
   const colorScheme = useColorScheme();
@@ -28,10 +28,27 @@ export default function App() {
   const [history, setHistory] = useState<Scan[]>([]);
   const [activeScan, setActiveScan] = useState<Scan | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [agentTask, setAgentTask] = useState<AgentTask | null>(null);
+  const [agentError, setAgentError] = useState<string | null>(null);
 
   useEffect(() => {
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    if (!agentTask || !["queued", "running"].includes(agentTask.status)) return;
+    const timer = setInterval(async () => {
+      try {
+        const nextTask = await getAgentTask(agentTask.id);
+        setAgentTask(nextTask);
+        if (nextTask.status !== "failed") setAgentError(null);
+        if (nextTask.status === "failed") setAgentError(nextTask.error ?? "The agent task failed.");
+      } catch (error) {
+        setAgentError(error instanceof Error ? error.message : "Could not refresh the agent task.");
+      }
+    }, 1200);
+    return () => clearInterval(timer);
+  }, [agentTask?.id, agentTask?.status]);
 
   async function bootstrap() {
     const storedAuthUser = await getLocalAuthUser();
@@ -70,6 +87,17 @@ export default function App() {
     const scans = await getScanHistory();
     setHistory(scans);
     setActiveScan(nextActive ?? scans[0] ?? null);
+  }
+
+  async function runAgentTask() {
+    try {
+      setAgentError(null);
+      const scan = activeScan ?? history[0] ?? null;
+      const task = await startAgentTask("Prepare my next repair decision", scan?.id);
+      setAgentTask(task);
+    } catch (error) {
+      setAgentError(error instanceof Error ? error.message : "Could not start the agent task.");
+    }
   }
 
   function renderScreen() {
@@ -148,6 +176,8 @@ export default function App() {
             setVehicle(null);
             setHistory([]);
             setActiveScan(null);
+            setAgentTask(null);
+            setAgentError(null);
             setScreen("login");
           }}
           onEditVehicle={() => setScreen("onboarding")}
@@ -163,6 +193,9 @@ export default function App() {
         onHistory={() => setScreen("history")}
         onMechanicPrep={() => (activeScan ? setScreen("prep") : setScreen("history"))}
         onRepairPlan={() => (activeScan ? setScreen("repairPlan") : setScreen("history"))}
+        agentTask={agentTask}
+        agentError={agentError}
+        onRunAgent={runAgentTask}
         onVehicleEdit={() => setScreen("onboarding")}
       />
     );

@@ -68,3 +68,38 @@ export type Scan = {
   created_at: string;
   diagnosis: Diagnosis;
 };
+
+export type AgentTaskStatus = "queued" | "running" | "completed" | "failed";
+
+export type AgentActivity = {
+  label: string;
+  status: string;
+  detail: string;
+};
+
+export type AgentAction = {
+  title: string;
+  detail: string;
+  priority: Urgency;
+};
+
+export type AgentTaskResult = {
+  summary: string;
+  backend_calls: string[];
+  next_actions: AgentAction[];
+};
+
+export type AgentTask = {
+  id: string;
+  user_id: number;
+  goal: string;
+  scan_id?: number | null;
+  status: AgentTaskStatus;
+  progress: number;
+  activities: AgentActivity[];
+  result?: AgentTaskResult | null;
+  error?: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+};

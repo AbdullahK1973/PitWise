@@ -6,7 +6,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import get_settings
 from app.database import Base, SessionLocal, engine
-from app.routes import account, auth, diagnosis, health, vehicles
+from app.routes import account, agent, auth, diagnosis, health, vehicles
 from app.seed.seed_db import seed_database
 
 
@@ -53,3 +53,4 @@ app.include_router(auth.router)
 app.include_router(account.router)
 app.include_router(vehicles.router)
 app.include_router(diagnosis.router)
+app.include_router(agent.router)

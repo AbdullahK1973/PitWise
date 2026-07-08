@@ -4,7 +4,7 @@ import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { UrgencyBadge } from "../components/UrgencyBadge";
 import { useTheme } from "../hooks/useTheme";
-import { Scan, Vehicle } from "../types";
+import { AgentTask, Scan, Vehicle } from "../types";
 
 export function HomeScreen({
   vehicle,
@@ -14,6 +14,9 @@ export function HomeScreen({
   onHistory,
   onMechanicPrep,
   onRepairPlan,
+  agentTask,
+  agentError,
+  onRunAgent,
   onVehicleEdit
 }: {
   vehicle: Vehicle | null;
@@ -23,10 +26,15 @@ export function HomeScreen({
   onHistory: () => void;
   onMechanicPrep: () => void;
   onRepairPlan: () => void;
+  agentTask: AgentTask | null;
+  agentError: string | null;
+  onRunAgent: () => void;
   onVehicleEdit: () => void;
 }) {
   const theme = useTheme();
   const vehicleName = vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "No vehicle saved";
+  const agentBusy = agentTask ? ["queued", "running"].includes(agentTask.status) : false;
+  const agentStatus = agentTask ? agentTask.status.replace("_", " ").toUpperCase() : "IDLE";
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.hero}>
@@ -65,6 +73,70 @@ export function HomeScreen({
             </View>
           ))}
         </View>
+      </Card>
+
+      <Card style={styles.agentCard}>
+        <View style={styles.agentTop}>
+          <View style={[styles.agentGlyph, { backgroundColor: `${theme.primary}18`, borderColor: `${theme.primary}55` }]}>
+            <Text style={[styles.agentGlyphText, { color: theme.primary }]}>AI</Text>
+          </View>
+          <View style={styles.agentCopy}>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Autonomous agent</Text>
+            <Text style={[styles.summary, { color: theme.muted }]}>
+              {agentTask?.result?.summary ?? "Run a background check that calls the backend, reviews your vehicle and scan history, then returns next actions."}
+            </Text>
+          </View>
+          <View style={styles.agentAction}>
+            <Button label={agentBusy ? "Agent Running" : "Run Agent"} onPress={onRunAgent} disabled={agentBusy} />
+          </View>
+        </View>
+
+        <View style={styles.agentMeta}>
+          <View style={[styles.statusPill, { borderColor: theme.border, backgroundColor: "#0B151CCC" }]}>
+            <Text style={[styles.statusPillText, { color: agentBusy ? theme.primary : theme.muted }]}>{agentStatus}</Text>
+          </View>
+          <Text style={[styles.agentProgressLabel, { color: theme.muted }]}>{agentTask ? `${agentTask.progress}% complete` : "Ready"}</Text>
+        </View>
+
+        <View style={[styles.agentProgressTrack, { backgroundColor: "#101A22" }]}>
+          <View style={[styles.agentProgressFill, { width: `${agentTask?.progress ?? 0}%`, backgroundColor: theme.primary }]} />
+        </View>
+
+        {agentError ? <Text style={[styles.agentError, { color: "#FFB3A6" }]}>{agentError}</Text> : null}
+
+        {agentTask?.activities.length ? (
+          <View style={styles.agentLog}>
+            {agentTask.activities.slice(-3).map((activity, index) => (
+              <View key={`${activity.label}-${index}`} style={styles.agentLogItem}>
+                <Text style={[styles.agentLogLabel, { color: theme.text }]}>{activity.label}</Text>
+                <Text style={[styles.agentLogDetail, { color: theme.muted }]}>{activity.detail}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {agentTask?.result ? (
+          <View style={styles.agentResults}>
+            <View style={styles.backendCalls}>
+              {agentTask.result.backend_calls.map((call) => (
+                <View key={call} style={[styles.callChip, { borderColor: theme.border, backgroundColor: "#101A2299" }]}>
+                  <Text style={[styles.callChipText, { color: theme.code }]}>{call}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.nextActions}>
+              {agentTask.result.next_actions.slice(0, 3).map((action) => (
+                <View key={action.title} style={[styles.nextAction, { borderColor: theme.border }]}>
+                  <View style={styles.nextActionTop}>
+                    <Text style={[styles.nextActionTitle, { color: theme.text }]}>{action.title}</Text>
+                    <UrgencyBadge urgency={action.priority} />
+                  </View>
+                  <Text style={[styles.nextActionDetail, { color: theme.muted }]}>{action.detail}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
       </Card>
 
       <View style={styles.grid}>
@@ -236,6 +308,127 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900",
     letterSpacing: 1
+  },
+  agentCard: {
+    gap: 14,
+    marginBottom: 14
+  },
+  agentTop: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 12
+  },
+  agentGlyph: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  agentGlyphText: {
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  agentCopy: {
+    flex: 1,
+    flexBasis: 280
+  },
+  agentAction: {
+    minWidth: 160,
+    flexGrow: 1
+  },
+  agentMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12
+  },
+  statusPill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6
+  },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  agentProgressLabel: {
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  agentProgressTrack: {
+    height: 9,
+    borderRadius: 999,
+    overflow: "hidden"
+  },
+  agentProgressFill: {
+    height: "100%",
+    borderRadius: 999
+  },
+  agentError: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "700"
+  },
+  agentLog: {
+    gap: 8
+  },
+  agentLogItem: {
+    gap: 3
+  },
+  agentLogLabel: {
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  agentLogDetail: {
+    fontSize: 13,
+    lineHeight: 19
+  },
+  agentResults: {
+    gap: 12
+  },
+  backendCalls: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  callChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  callChipText: {
+    fontSize: 11,
+    fontWeight: "900"
+  },
+  nextActions: {
+    gap: 8
+  },
+  nextAction: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12
+  },
+  nextActionTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 6
+  },
+  nextActionTitle: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "900"
+  },
+  nextActionDetail: {
+    fontSize: 14,
+    lineHeight: 20
   },
   grid: {
     gap: 14,

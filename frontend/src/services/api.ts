@@ -1,10 +1,12 @@
-import { AuthResponse, Diagnosis, Scan, Vehicle, VehicleInput } from "../types";
+import { AgentTask, AuthResponse, Diagnosis, Scan, Vehicle, VehicleInput } from "../types";
 import {
+  demoGetAgentTask,
   demoGetMechanicPrep,
   demoGetScanHistory,
   demoGetVehicle,
   demoLoginWithEmail,
   demoSaveVehicle,
+  demoStartAgentTask,
   demoSubmitCodeLookup,
   demoSubmitIssueDescription
 } from "./demoApi";
@@ -107,6 +109,24 @@ export function getScanHistory() {
 
 export function getMechanicPrep(scanId: number) {
   return withDemoFallback(() => request<Diagnosis>(`/mechanic-prep/${scanId}`), () => demoGetMechanicPrep(scanId));
+}
+
+export function startAgentTask(goal: string, scanId?: number) {
+  return withDemoFallback(
+    () =>
+      request<AgentTask>("/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify({
+          goal,
+          scan_id: scanId ?? null
+        })
+      }),
+    () => demoStartAgentTask(goal, scanId)
+  );
+}
+
+export function getAgentTask(taskId: string) {
+  return withDemoFallback(() => request<AgentTask>(`/agent/tasks/${taskId}`), () => demoGetAgentTask(taskId));
 }
 
 export function deleteAccountData() {
