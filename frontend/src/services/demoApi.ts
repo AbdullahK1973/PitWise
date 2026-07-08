@@ -200,6 +200,59 @@ const SEEDED_CODES: SeededCode[] = [
 const CODE_PATTERN = /^[PCBU][0-9A-F]{4}$/;
 const SAFETY_CATEGORIES = new Set(["brakes", "cooling", "oil_pressure", "charging", "steering", "transmission"]);
 const demoAgentTasks = new Map<string, AgentTask>();
+const SYMPTOM_KEYWORDS: Record<string, string[]> = {
+  engine: [
+    "check",
+    "engine",
+    "flash",
+    "flashes",
+    "flashing",
+    "hesitate",
+    "hesitation",
+    "idle",
+    "light",
+    "misfire",
+    "misfires",
+    "rough",
+    "shake",
+    "shakes",
+    "shaking",
+    "stall",
+    "stalls",
+    "stop",
+    "stopped",
+    "stoplight",
+    "stoplights",
+    "vibrate",
+    "vibrates",
+    "vibration"
+  ],
+  emissions: ["catalytic", "converter", "emissions", "exhaust", "smell", "fuel", "gas", "cap", "evap", "leak", "readiness"],
+  fuel_air: ["lean", "vacuum", "air", "maf", "fuel", "surge", "hiss", "whistle", "stumble", "intake"],
+  cooling: ["coolant", "temperature", "thermostat", "heat", "heater", "cold", "warm", "overheat", "overheating"],
+  sensor: ["sensor", "temperature", "connector", "wiring", "intake", "iat", "unplugged"],
+  engine_timing: ["oil", "timing", "camshaft", "rattle", "sludge", "vvt", "solenoid", "startup"],
+  drivetrain: ["speedometer", "speed", "abs", "traction", "shift", "shifting", "wheel"],
+  transmission: ["transmission", "gear", "shift", "slip", "slipping", "limp", "fluid", "jerk"]
+};
+
+const CODE_KEYWORDS: Record<string, string[]> = {
+  P0300: ["multiple", "random", "many", "all"],
+  P0301: ["cylinder", "1", "one"],
+  P0302: ["cylinder", "2", "two"],
+  P0420: ["catalytic", "converter", "rotten", "egg", "sulfur", "exhaust"],
+  P0455: ["large", "gas", "cap", "fuel", "smell", "evap"],
+  P0442: ["small", "gas", "cap", "evap"],
+  P0128: ["thermostat", "cold", "heater", "warm", "temperature"],
+  P0113: ["iat", "intake", "air", "temperature"],
+  P0010: ["actuator", "circuit", "vvt", "solenoid", "wiring"],
+  P0011: ["advanced", "timing", "oil", "rattle", "sludge"],
+  P0021: ["bank", "2", "two", "advanced", "timing"],
+  P0500: ["speedometer", "vehicle", "speed", "abs"],
+  P0700: ["transmission", "gear", "shift", "limp", "slip"],
+  P0141: ["oxygen", "o2", "heater", "downstream", "sensor"],
+  P0171: ["lean", "vacuum", "hiss", "maf", "fuel", "stumble"]
+};
 
 export async function demoLoginWithEmail(email: string, displayName?: string): Promise<AuthResponse> {
   const normalized = email.trim().toLowerCase();
@@ -358,8 +411,9 @@ function createDiagnosis(codeData: SeededCode, symptoms?: string, symptomsNote?:
 
 function createDemoAgentScanResult(goal: string, vehicle: Vehicle | null, scans: Scan[], scan: Scan): AgentTask["result"] {
   const diagnosis = scan.diagnosis;
+  const symptoms = symptomSummary(scan);
   return {
-    summary: `Autonomous agent completed '${goal}' for ${vehicleLabel(vehicle)}. The latest priority is ${scan.code}: ${diagnosis.title}.`,
+    summary: `Autonomous agent completed '${goal}' for ${vehicleLabel(vehicle)}. The latest priority is ${scan.code}: ${diagnosis.title}.${symptoms ? ` It also used the described issue: ${symptoms}.` : ""}`,
     backend_calls: ["GET /vehicles/main", "GET /scans", `GET /mechanic-prep/${scan.id}`],
     next_actions: [
       {
@@ -367,6 +421,15 @@ function createDemoAgentScanResult(goal: string, vehicle: Vehicle | null, scans:
         detail: diagnosis.confidence_note,
         priority: diagnosis.urgency
       },
+      ...(symptoms
+        ? [
+            {
+              title: "Bring the symptom description",
+              detail: `Tell the shop exactly what you entered: ${symptoms}`,
+              priority: "moderate" as Urgency
+            }
+          ]
+        : []),
       {
         title: "Request proof before parts",
         detail: diagnosis.proof_to_request[0] ?? "Ask for test results that confirm the suspected cause.",
@@ -417,12 +480,22 @@ function matchDescription(description: string): SeededCode | null {
 function scoreCode(codeData: SeededCode, tokens: Set<string>): number {
   const text = `${codeData.code} ${codeData.title} ${codeData.explanation} ${codeData.likelyCauses.join(" ")} ${codeData.repairPaths.join(" ")} ${codeData.category}`;
   const codeTokens = tokenize(text);
+  const symptomTokens = new Set(SYMPTOM_KEYWORDS[codeData.category] ?? []);
+  const specificTokens = new Set(CODE_KEYWORDS[codeData.code] ?? []);
   let score = 0;
   tokens.forEach((token) => {
     if (codeTokens.has(token)) score += 1;
+    if (symptomTokens.has(token)) score += 3;
+    if (specificTokens.has(token)) score += 4;
     if (codeData.code.toLowerCase().includes(token)) score += 3;
   });
   return score;
+}
+
+function symptomSummary(scan: Scan): string | null {
+  const symptoms = scan.symptoms?.trim().replace(/\s+/g, " ");
+  if (!symptoms) return null;
+  return symptoms.length <= 180 ? symptoms : `${symptoms.slice(0, 177).trim()}...`;
 }
 
 function tokenize(value: string): Set<string> {

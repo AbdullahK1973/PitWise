@@ -13,27 +13,43 @@ import {
 import { getClientId } from "./storage";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+const REQUEST_TIMEOUT_MS = 3000;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const clientId = await getClientId();
+  const controller = new AbortController();
+  const { headers, signal, ...requestOptions } = options ?? {};
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        "X-Pitwise-Client-Id": clientId,
-        ...(options?.headers ?? {})
-      },
-      ...options
-    });
+    const clientId = await withTimeout(getClientId(), "client id");
+    response = await withTimeout(
+      fetch(`${API_URL}${path}`, {
+        ...requestOptions,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Pitwise-Client-Id": clientId,
+          ...(headers ?? {})
+        },
+        signal: signal ?? controller.signal
+      }),
+      path
+    );
   } catch (error) {
-    throw new Error(`Could not reach the PitWise API at ${API_URL}. Make sure the backend is running, then try again.`);
+    controller.abort();
+    throw new Error(`Could not reach the PitWise API at ${API_URL} within ${REQUEST_TIMEOUT_MS / 1000} seconds. Make sure the backend is running, then try again.`);
   }
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Request failed" }));
     throw new Error(typeof error.detail === "string" ? error.detail : "Request failed");
   }
   return response.json() as Promise<T>;
+}
+
+function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => reject(new Error(`${label} timed out`)), REQUEST_TIMEOUT_MS);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeout));
 }
 
 export function getVehicle() {

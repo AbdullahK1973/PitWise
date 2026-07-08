@@ -89,6 +89,15 @@ export default function App() {
     setActiveScan(nextActive ?? scans[0] ?? null);
   }
 
+  function handleScanCreated(scan: Scan) {
+    setActiveScan(scan);
+    setHistory((current) => [scan, ...current.filter((item) => item.id !== scan.id)]);
+    setScreen("detail");
+    refreshHistory(scan).catch(() => {
+      setHistory((current) => (current.some((item) => item.id === scan.id) ? current : [scan, ...current]));
+    });
+  }
+
   async function runAgentTask() {
     try {
       setAgentError(null);
@@ -119,11 +128,7 @@ export default function App() {
         <CodeEntryScreen
           vehicle={vehicle}
           onBack={() => setScreen("home")}
-          onScanCreated={async (scan) => {
-            setActiveScan(scan);
-            await refreshHistory(scan);
-            setScreen("detail");
-          }}
+          onScanCreated={handleScanCreated}
         />
       );
     }
@@ -160,11 +165,7 @@ export default function App() {
         <BluetoothScannerScreen
           vehicle={vehicle}
           onBack={() => setScreen("home")}
-          onScanCreated={async (scan) => {
-            setActiveScan(scan);
-            await refreshHistory(scan);
-            setScreen("detail");
-          }}
+          onScanCreated={handleScanCreated}
         />
       );
     }

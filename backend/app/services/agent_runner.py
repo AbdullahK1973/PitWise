@@ -108,20 +108,27 @@ def _build_result(
     backend_calls: list[str],
 ) -> AgentTaskResult:
     vehicle_name = _vehicle_name(vehicle)
+    symptoms = _symptom_summary(scan)
     first_proof = diagnosis.proof_to_request[0] if diagnosis.proof_to_request else "proof that confirms the suspected fault"
     first_question = diagnosis.mechanic_questions_to_ask[0] if diagnosis.mechanic_questions_to_ask else "what test confirms the repair"
     first_approval = diagnosis.before_approving_repairs[0] if diagnosis.before_approving_repairs else "a written estimate with evidence"
     scan_count_note = f" It considered {len(scans)} recent scan{'' if len(scans) == 1 else 's'}." if scans else ""
+    symptom_note = f" It also used the described issue: {symptoms}." if symptoms else ""
 
     return AgentTaskResult(
         summary=(
             f"Autonomous agent completed '{goal}' for {vehicle_name}. "
             f"The latest priority is {scan.code}: {diagnosis.title}. "
-            f"Drive guidance is {diagnosis.drive_safety_guidance}.{scan_count_note}"
+            f"Drive guidance is {diagnosis.drive_safety_guidance}.{symptom_note}{scan_count_note}"
         ),
         backend_calls=backend_calls,
         next_actions=[
             AgentAction(title="Confirm the drive decision", detail=diagnosis.confidence_note, priority=diagnosis.urgency),
+            *(
+                [AgentAction(title="Bring the symptom description", detail=f"Tell the shop exactly what you entered: {symptoms}", priority="moderate")]
+                if symptoms
+                else []
+            ),
             AgentAction(title="Request proof before parts", detail=first_proof, priority=diagnosis.urgency),
             AgentAction(title="Ask the shop one pointed question", detail=first_question, priority="moderate"),
             AgentAction(title="Use the approval gate", detail=first_approval, priority="moderate"),
@@ -145,6 +152,15 @@ def _vehicle_name(vehicle: Vehicle | None) -> str:
     if not vehicle:
         return "the saved account"
     return f"{vehicle.year} {vehicle.make} {vehicle.model}"
+
+
+def _symptom_summary(scan: Scan) -> str | None:
+    if not scan.symptoms:
+        return None
+    symptoms = " ".join(scan.symptoms.split())
+    if not symptoms:
+        return None
+    return symptoms if len(symptoms) <= 180 else f"{symptoms[:177].rstrip()}..."
 
 
 def _get_state(task_id: str) -> AgentTaskState | None:

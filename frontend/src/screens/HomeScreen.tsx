@@ -59,11 +59,11 @@ export function HomeScreen({
             <Text style={[styles.searchGlyphText, { color: theme.primary }]}>OBD</Text>
           </View>
           <View style={styles.scanCopy}>
-            <Text style={[styles.scanTitle, { color: theme.text }]}>Ready to translate a code?</Text>
-            <Text style={[styles.scanHint, { color: theme.muted }]}>Try P0300, P0171, P0420, P0128, or whatever your scanner found.</Text>
+            <Text style={[styles.scanTitle, { color: theme.text }]}>Ready to translate an issue?</Text>
+            <Text style={[styles.scanHint, { color: theme.muted }]}>Enter a code like P0302 or describe what the vehicle is doing.</Text>
           </View>
           <View style={styles.scanAction}>
-            <Button label="Scan / Enter Code" onPress={onEnterCode} />
+            <Button label="Enter Code / Describe" onPress={onEnterCode} />
           </View>
         </View>
         <View style={styles.quickCodes}>

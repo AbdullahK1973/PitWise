@@ -16,12 +16,13 @@ type WorkflowStep = {
 
 function makeWorkflowSteps(scan: Scan): WorkflowStep[] {
   const diagnosis = scan.diagnosis;
+  const describedIssue = scan.symptoms?.trim();
   const firstCause = diagnosis.likely_causes[0] ?? "the highest-probability cause";
   const firstRepairPath = diagnosis.common_repair_paths[0] ?? "the simplest validated repair path";
   const firstProofRequest = diagnosis.proof_to_request[0] ?? "clear test results before approving work";
   const firstApprovalCheck = diagnosis.before_approving_repairs[0] ?? "a written estimate with parts, labor, and diagnostic evidence";
 
-  return [
+  const steps: WorkflowStep[] = [
     {
       id: "triage-risk",
       phase: "Triage",
@@ -32,8 +33,20 @@ function makeWorkflowSteps(scan: Scan): WorkflowStep[] {
       id: "confirm-code",
       phase: "Triage",
       title: "Confirm the exact fault context",
-      detail: `Work from ${diagnosis.code} (${diagnosis.title}) and note symptoms before clearing any codes.`
+      detail: describedIssue
+        ? `Work from ${diagnosis.code} (${diagnosis.title}) and keep this symptom description attached: ${describedIssue}`
+        : `Work from ${diagnosis.code} (${diagnosis.title}) and note symptoms before clearing any codes.`
     },
+    ...(describedIssue
+      ? [
+          {
+            id: "verify-described-issue",
+            phase: "Triage",
+            title: "Verify the described issue",
+            detail: "Confirm when it happens, whether the warning light is steady or flashing, and whether the same symptoms return after a short drive."
+          }
+        ]
+      : []),
     {
       id: "inspect-cause",
       phase: "Diagnose",
@@ -59,6 +72,7 @@ function makeWorkflowSteps(scan: Scan): WorkflowStep[] {
       detail: firstApprovalCheck
     }
   ];
+  return steps;
 }
 
 export function GuidedRepairPlanScreen({ scan, onBack, onMechanicPrep }: { scan: Scan; onBack: () => void; onMechanicPrep: () => void }) {
@@ -76,6 +90,13 @@ export function GuidedRepairPlanScreen({ scan, onBack, onMechanicPrep }: { scan:
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <SectionHeader title="Guided Repair Plan" subtitle={`${scan.diagnosis.code} - ${scan.diagnosis.title}`} />
+
+      {scan.symptoms ? (
+        <Card>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>Described issue</Text>
+          <Text style={[styles.muted, { color: theme.muted }]}>{scan.symptoms}</Text>
+        </Card>
+      ) : null}
 
       <Card style={{ borderColor: safetyColor }}>
         <View style={styles.progressTop}>

@@ -100,6 +100,19 @@ def test_describe_issue_lookup_creates_matched_scan(client):
     assert data["diagnosis"]["estimated_repair_cost_range"]
 
 
+def test_describe_issue_lookup_understands_plain_driver_words(client):
+    response = client.post(
+        "/diagnosis/describe",
+        headers={"X-Pitwise-Client-Id": "describe-plain-client-12345"},
+        json={"description": "My car shakes when I am stopped at stoplights and the check engine light is on."},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["code"] in {"P0300", "P0301", "P0302"}
+    assert data["symptoms"] == "My car shakes when I am stopped at stoplights and the check engine light is on."
+
+
 def test_describe_issue_lookup_rejects_unmatched_description(client):
     response = client.post(
         "/diagnosis/describe",
@@ -177,6 +190,8 @@ def test_agent_task_runs_in_background_and_reports_backend_work(client):
     assert task["progress"] == 100
     assert task["result"]["backend_calls"] == ["GET /vehicles/main", "GET /scans", f"GET /mechanic-prep/{scan['id']}"]
     assert task["result"]["next_actions"]
+    assert "rough idle after cold start" in task["result"]["summary"]
+    assert any(action["title"] == "Bring the symptom description" for action in task["result"]["next_actions"])
 
 
 def test_agent_task_rejects_other_users_scan(client):
